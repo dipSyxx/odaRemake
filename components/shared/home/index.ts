@@ -1,0 +1,11 @@
+export { Header } from "../header";
+export { HomeBanner } from "./banner";
+export { HomeHero } from "./hero";
+export { HomeWelcome } from "./welcome";
+export { HomeFeatures } from "./features";
+export { HomeLowPrices } from "./low-prices";
+export { HomeBenefits } from "./benefits";
+export { HomeRecipes } from "./recipes";
+export { HomeDelivery } from "./home-delivery";
+export { Footer } from "../footer";
+export { HomeChatButton } from "./chat-button";
