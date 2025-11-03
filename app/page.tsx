@@ -17,15 +17,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
+import Image from "next/image";
 
 export default function HomePage() {
   const { theme, setTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+      <header className="sticky top-0 z-50  border-b border-border">
         <div className=" w-full">
-          <div className="flex items-center justify-center py-3 px-5 gap-4">
+          <div className="bg-background/95 backdrop-blur-sm flex items-center justify-center py-3 px-5 gap-4">
             <div className="container flex justify-between">
               {/* Logo */}
               <div className="flex items-center gap-4 lg:gap-8 flex-1 lg:flex-initial">
@@ -68,7 +69,7 @@ export default function HomePage() {
           </div>
 
           {/* Navigation - improved mobile responsiveness */}
-          <nav className="bg-secondarybg flex items-center justify-center py-3 px-5 gap-4">
+          <nav className="bg-secondarybg/95 backdrop-blur-sm border-b border-border border-white/50 flex items-center justify-center py-2 px-5 gap-4">
             <div className="container flex justify-between">
               <div className="flex items-center gap-3 lg:gap-6 overflow-x-auto">
                 <button className="flex items-center gap-2 text-foreground text-sm hover:text-muted-foreground whitespace-nowrap">
@@ -94,7 +95,7 @@ export default function HomePage() {
                 <button className="text-foreground text-sm hover:text-muted-foreground hidden md:inline">
                   Logg inn
                 </button>
-                <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 lg:px-5">
+                <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 py-0 h-7">
                   <span className="hidden sm:inline">Opprett konto</span>
                   <span className="sm:hidden">Opprett</span>
                 </Button>
@@ -124,9 +125,11 @@ export default function HomePage() {
 
       {/* Hero Section - improved mobile responsiveness */}
       <div className="relative h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
-        <img
+        <Image
           src="/images/design-mode/6011551e61f4903e41de9e5421a285122b3e3a07-2638x1519.jpg"
           alt="Oda delivery person"
+          width={1270}
+          height={600}
           className="absolute inset-0 w-full h-full object-cover"
         />
 
@@ -177,7 +180,7 @@ export default function HomePage() {
         <div className="container mx-auto px-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
             {/* Feature Card 1 */}
-            <div className="bg-card rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-secondarybg rounded-xl overflow-hidden shadow-sm">
               <img
                 src="https://cdn.sanity.io/images/1teetjp9/production/420e3110b1d84d2d4139b2f9b787c58f898c0567-8158x9123.jpg?rect=0%2C0%2C8158%2C6119&w=260&h=195&auto=format"
                 alt="Lave priser"
@@ -195,7 +198,7 @@ export default function HomePage() {
             </div>
 
             {/* Feature Card 2 */}
-            <div className="bg-card rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-secondarybg rounded-xl overflow-hidden shadow-sm">
               <img
                 src="https://cdn.sanity.io/images/1teetjp9/production/d95f526d2b68ba4d6dc669798d87906aea4127a6-2968x2190.jpg?rect=235%2C117%2C2497%2C1873&fp-x=0.5&fp-y=0.4810538419008915&w=260&h=195&auto=format"
                 alt="En ferskvaeredisk i særklasse"
@@ -213,7 +216,7 @@ export default function HomePage() {
             </div>
 
             {/* Feature Card 3 */}
-            <div className="bg-card rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-secondarybg rounded-xl overflow-hidden shadow-sm">
               <img
                 src="https://cdn.sanity.io/images/1teetjp9/production/12e97e6b10ee39bb9ef311923b68aabf0f9ed272-4492x3685.jpg?rect=0%2C0%2C4492%2C3369&w=260&h=195&auto=format"
                 alt="Ferskere frukt og grønt"
@@ -231,7 +234,7 @@ export default function HomePage() {
             </div>
 
             {/* Feature Card 4 */}
-            <div className="bg-card rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-secondarybg rounded-xl overflow-hidden shadow-sm">
               <img
                 src="https://cdn.sanity.io/images/1teetjp9/production/0915d9406b2ddb835a65d1458dce5889112c8406-1920x1280.jpg?rect=129%2C0%2C1663%2C1247&fp-x=0.5&fp-y=0.48703596199831073&w=260&h=195&auto=format"
                 alt="Et bondens marked"
@@ -288,7 +291,7 @@ export default function HomePage() {
       </div>
 
       {/* Other Benefits Section - improved mobile layout */}
-      <div className="bg-background py-12 lg:py-16">
+      <div className="bg-secondarybg py-12 lg:py-16">
         <div className="container mx-auto px-5">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground text-center mb-12 lg:mb-16">
             Andre fordeler
@@ -397,7 +400,7 @@ export default function HomePage() {
               {/* Large image - top left */}
               <div className="row-span-2">
                 <img
-                  src="/grilled-chicken-with-rice-and-vegetables-on-plate.jpg"
+                  src="https://images.oda.com/oppskrifter/9033af54-d5a9-4aca-b555-4f6e27e27872.jpg?fit=bounds&format=auto&optimize=medium&width=1000&s=0x3c09f928795b65165bc1f26358b02489b820207c"
                   alt="Grilled chicken with rice"
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -406,7 +409,7 @@ export default function HomePage() {
               {/* Large image - top right */}
               <div className="row-span-2">
                 <img
-                  src="/shakshuka-eggs-in-tomato-sauce-in-cast-iron-pan.jpg"
+                  src="https://images.oda.com/recipes/8d84beb2-c247-4911-85a3-ac248e30e85b.jpg?fit=bounds&format=auto&optimize=medium&width=1000&s=0x1efb51c189dcf8c75679009185d5063074a2bd40"
                   alt="Shakshuka in cast iron pan"
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -415,7 +418,7 @@ export default function HomePage() {
               {/* Small image - bottom left */}
               <div>
                 <img
-                  src="/frittata-omelet-in-cast-iron-pan.jpg"
+                  src="https://images.oda.com/oppskrifter/e5649c39-4bf1-4893-85ec-d9623ddc299f.jpg?fit=bounds&format=auto&optimize=medium&width=1000&s=0xcd418c30212f0ec5dd902d3f3140bdef8fcc4e2e"
                   alt="Frittata in pan"
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -424,7 +427,7 @@ export default function HomePage() {
               {/* Medium image - bottom right */}
               <div>
                 <img
-                  src="/orange-curry-soup-in-white-bowl.jpg"
+                  src="https://images.oda.com/recipes/67f32aa2-d4c2-459d-855c-e8e4cc1ab954.jpg?fit=bounds&format=auto&optimize=medium&width=1000&s=0xc414b8ae1f4541e2b2c2f01b7fb989897270bfb0"
                   alt="Curry soup"
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -497,7 +500,7 @@ export default function HomePage() {
       </div>
 
       {/* Footer - improved mobile layout */}
-      <footer className="bg-background border-t border-border pt-12 lg:pt-16 pb-8">
+      <footer className="bg-background border-t border-border border-white/50 pt-12 lg:pt-16 pb-8">
         <div className="container mx-auto px-5">
           {/* Footer Links Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-8 lg:mb-12">
@@ -665,7 +668,7 @@ export default function HomePage() {
               </h3>
               <div className="space-y-3">
                 <a
-                  href="#"
+                  href="https://apps.apple.com/no/app/oda-online-grocery-store/id1079537578"
                   className="flex items-center gap-2 bg-black hover:bg-black/80 text-white px-5 py-2.5 rounded-lg transition-colors border border-white/20"
                 >
                   <svg
@@ -685,7 +688,7 @@ export default function HomePage() {
                   </div>
                 </a>
                 <a
-                  href="#"
+                  href="https://play.google.com/store/apps/details?id=no.kolonial.tienda"
                   className="flex items-center gap-2 bg-black hover:bg-black/80 text-white px-5 py-2.5 rounded-lg transition-colors border border-white/20"
                 >
                   <svg
@@ -707,7 +710,7 @@ export default function HomePage() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-border pt-6 lg:pt-8">
+          <div className="border-t border-border border-white/30 pt-6 lg:pt-8">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
               {/* Left side - Copyright and links */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 lg:gap-6 text-sm text-foreground/60">
