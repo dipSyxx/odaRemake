@@ -7,13 +7,16 @@ import { serializeUser } from "@/lib/serializers";
 const listQuerySchema = z.object({
   skip: z.coerce.number().int().min(0).optional(),
   take: z.coerce.number().int().min(1).max(100).optional(),
-  search: z.string().optional(),
+  search: z.string().trim().min(1).optional(),
 });
 
 const userCreateSchema = z.object({
   email: z.string().email(),
-  name: z.string().min(1).optional(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().trim().min(2).optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[A-Za-z])(?=.*\d).+$/, "Must include letters and numbers"),
 });
 
 export async function GET(request: NextRequest) {

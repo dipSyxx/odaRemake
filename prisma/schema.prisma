@@ -39,7 +39,7 @@ model User {
 
 model Cart {
   id          String     @id @default(cuid())
-  user        User?      @relation(fields: [userId], references: [id])
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId      String?
   status      CartStatus @default(DRAFT)
   currency    String     @default("NOK")
@@ -52,9 +52,9 @@ model Cart {
 
 model CartItem {
   id        String   @id @default(cuid())
-  cart      Cart     @relation(fields: [cartId], references: [id])
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
   cartId    String
-  product   Product  @relation(fields: [productId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   quantity  Int      @default(1)
   unitPrice Decimal  @db.Decimal(10, 2)
