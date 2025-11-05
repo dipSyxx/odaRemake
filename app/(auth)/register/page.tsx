@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
+import { useTheme } from "@/lib/theme-provider";
 
 const registerSchema = z
   .object({
@@ -33,6 +34,7 @@ const registerSchema = z
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const isDarkMode = useTheme().theme === "dark";
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: { email: "", name: "", password: "", confirm: "" },
@@ -62,11 +64,15 @@ export default function RegisterPage() {
       <div className="grid max-w-5xl w-full grid-cols-1 md:grid-cols-2 gap-8 p-6">
         <div className="hidden md:block" aria-hidden>
           <Image
-            src="/images/design-mode/6011551e61f4903e41de9e5421a285122b3e3a07-2638x1519.jpg"
-            alt="Oda delivery person"
-            width={1270}
-            height={600}
-            className="h-full w-full object-cover object-right rounded-[8px]"
+            src={
+              isDarkMode
+                ? "/images/login-image-light.svg"
+                : "/images/login-image-dark.svg"
+            }
+            alt="Oda login image"
+            width={385}
+            height={278}
+            className="fill-white h-full w-full"
             priority
           />
         </div>
