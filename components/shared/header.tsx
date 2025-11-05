@@ -128,7 +128,7 @@ export function Header() {
           >
             <div className="container flex justify-between">
               <motion.div
-                className="flex items-center gap-3 lg:gap-6 overflow-x-auto"
+                className="flex items-center gap-3 lg:gap-6 overflow-hidden"
                 variants={staggerChildren}
                 initial="hidden"
                 animate="visible"
