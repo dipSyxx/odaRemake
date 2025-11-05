@@ -12,6 +12,7 @@ import {
   scaleIn,
   staggerChildren,
 } from "../../lib/motion-presets";
+import Link from "next/link";
 
 const NAV_ITEMS: { icon: string; label: string; hasCaret?: boolean }[] = [
   { icon: "\u{1F3F7}\uFE0F", label: "Kategorier", hasCaret: true },
@@ -52,7 +53,7 @@ export function Header() {
                 className="text-2xl lg:text-3xl font-bold text-[#ff9500] flex-shrink-0"
                 variants={fadeInUp}
               >
-                oda
+                <Link href="/">oda</Link>
               </motion.h1>
 
               <motion.div
@@ -141,13 +142,15 @@ export function Header() {
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Logg inn
+                <Link href="/login">Logg inn</Link>
               </motion.button>
               <motion.div variants={fadeInUp}>
-                <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 py-0 h-7">
-                  <span className="hidden sm:inline">Opprett konto</span>
-                  <span className="sm:hidden">Opprett</span>
-                </Button>
+                <Link href="/register">
+                  <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 py-0 h-7">
+                    <span className="hidden sm:inline">Opprett konto</span>
+                    <span className="sm:hidden">Opprett</span>
+                  </Button>
+                </Link>
               </motion.div>
             </motion.div>
           </div>

@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
 
 const registerSchema = z
   .object({
@@ -60,7 +61,14 @@ export default function RegisterPage() {
     <div className="min-h-[80dvh] flex items-center justify-center bg-[--background]">
       <div className="grid max-w-5xl w-full grid-cols-1 md:grid-cols-2 gap-8 p-6">
         <div className="hidden md:block" aria-hidden>
-          <div className="h-full w-full rounded-xl bg-muted/10" />
+          <Image
+            src="/images/design-mode/6011551e61f4903e41de9e5421a285122b3e3a07-2638x1519.jpg"
+            alt="Oda delivery person"
+            width={1270}
+            height={600}
+            className="h-full w-full object-cover object-right rounded-[8px]"
+            priority
+          />
         </div>
         <div>
           <h1 className="text-4xl font-bold mb-2">Opprett konto</h1>

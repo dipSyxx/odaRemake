@@ -9,6 +9,7 @@ import {
   viewportOnce,
   staggerChildren,
 } from "../../../lib/motion-presets";
+import Link from "next/link";
 
 export function HomeHero() {
   return (
@@ -63,9 +64,11 @@ export function HomeHero() {
             animate="visible"
           >
             <motion.div variants={fadeInUp}>
-              <Button className="w-full bg-[#ff9500] hover:bg-[#e68600] text-black font-semibold py-4 lg:py-6 text-base lg:text-lg rounded-lg">
-                Bli kunde!
-              </Button>
+              <Link href="/register">
+                <Button className="w-full bg-[#ff9500] hover:bg-[#e68600] text-black font-semibold py-4 lg:py-6 text-base lg:text-lg rounded-lg">
+                  Bli kunde!
+                </Button>
+              </Link>
             </motion.div>
             <motion.div variants={fadeInUp}>
               <Button className="w-full border border-white text-purple-400 hover:bg-purple-500/10 hover:text-purple-400 py-4 lg:py-6 text-base lg:text-lg rounded-lg bg-transparent">
