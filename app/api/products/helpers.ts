@@ -107,7 +107,7 @@ const promotionStyleMap: Record<string, PromotionDisplayStyle> = {
 };
 
 function mapPromotionStyle(
-  style?: string | null,
+  style?: string | null
 ): PromotionDisplayStyle | undefined {
   if (!style) return undefined;
   const normalized = style.replace(/[-\s]/g, "_").toUpperCase();
@@ -118,9 +118,7 @@ const discountSourceMap: Record<string, DiscountSource> = {
   CAMPAIGN: DiscountSource.CAMPAIGN,
 };
 
-function mapDiscountSource(
-  source?: string | null,
-): DiscountSource | undefined {
+function mapDiscountSource(source?: string | null): DiscountSource | undefined {
   if (!source) return undefined;
   const normalized = source.toUpperCase();
   return discountSourceMap[normalized] ?? DiscountSource.UNKNOWN;
@@ -133,7 +131,7 @@ const arrayOrEmpty = <T>(value: (T | undefined | null)[] | undefined) =>
   value?.filter(Boolean).map((item) => item as T) ?? [];
 
 export function buildProductCreateData(
-  input: ProductCreateInput,
+  input: ProductCreateInput
 ): Prisma.ProductCreateInput {
   return {
     id: input.id,
@@ -158,7 +156,9 @@ export function buildProductCreateData(
     isExemptFromThirdPartyMarketing:
       input.isExemptFromThirdPartyMarketing ?? false,
     bonusInfo:
-      input.bonusInfo === undefined ? Prisma.JsonNull : (input.bonusInfo as any),
+      input.bonusInfo === undefined
+        ? Prisma.JsonNull
+        : (input.bonusInfo as any),
     images:
       input.images !== undefined
         ? {
@@ -189,13 +189,15 @@ export function buildProductCreateData(
           create: {
             id: input.discount.id,
             isDiscounted: input.discount.isDiscounted,
-            source: mapDiscountSource(input.discount.source) ?? DiscountSource.UNKNOWN,
+            source:
+              mapDiscountSource(input.discount.source) ??
+              DiscountSource.UNKNOWN,
             undiscountedGrossPrice:
-              input.discount.undiscountedGrossPrice !== undefined
+              input.discount.undiscountedGrossPrice != null
                 ? new Prisma.Decimal(input.discount.undiscountedGrossPrice)
                 : null,
             undiscountedGrossUnitPrice:
-              input.discount.undiscountedGrossUnitPrice !== undefined
+              input.discount.undiscountedGrossUnitPrice != null
                 ? new Prisma.Decimal(input.discount.undiscountedGrossUnitPrice)
                 : null,
             descriptionShort: input.discount.descriptionShort ?? null,
@@ -226,14 +228,13 @@ export function buildProductCreateData(
 }
 
 export function buildProductUpdateData(
-  input: ProductUpdateInput,
+  input: ProductUpdateInput
 ): Prisma.ProductUpdateInput {
   const data: Prisma.ProductUpdateInput = {};
 
   if (input.fullName !== undefined) data.fullName = input.fullName;
   if (input.brand !== undefined) data.brand = input.brand ?? null;
-  if (input.brandId !== undefined)
-    data.brandExternalId = input.brandId ?? null;
+  if (input.brandId !== undefined) data.brandExternalId = input.brandId ?? null;
   if (input.name !== undefined) data.name = input.name;
   if (input.nameExtra !== undefined) data.nameExtra = input.nameExtra ?? null;
   if (input.frontUrl !== undefined) data.frontUrl = input.frontUrl;
@@ -252,8 +253,7 @@ export function buildProductUpdateData(
   if (input.availability !== undefined) {
     data.isAvailable = input.availability?.isAvailable ?? true;
     data.availabilityCode = input.availability?.code ?? "available";
-    data.availabilityDescription =
-      input.availability?.description ?? null;
+    data.availabilityDescription = input.availability?.description ?? null;
     data.availabilityDescriptionShort =
       input.availability?.descriptionShort ?? null;
   }
@@ -262,7 +262,7 @@ export function buildProductUpdateData(
     data.metadata =
       input.metadata === null
         ? Prisma.JsonNull
-        : ((input.metadata as unknown) ?? Prisma.JsonNull);
+        : (input.metadata as unknown) ?? Prisma.JsonNull;
   }
 
   if (input.isExemptFromThirdPartyMarketing !== undefined) {
@@ -274,7 +274,7 @@ export function buildProductUpdateData(
     data.bonusInfo =
       input.bonusInfo === null
         ? Prisma.JsonNull
-        : ((input.bonusInfo as unknown) ?? Prisma.JsonNull);
+        : (input.bonusInfo as unknown) ?? Prisma.JsonNull;
   }
 
   if (input.images !== undefined) {
@@ -316,11 +316,11 @@ export function buildProductUpdateData(
               mapDiscountSource(input.discount.source) ??
               DiscountSource.UNKNOWN,
             undiscountedGrossPrice:
-              input.discount.undiscountedGrossPrice !== undefined
+              input.discount.undiscountedGrossPrice != null
                 ? new Prisma.Decimal(input.discount.undiscountedGrossPrice)
                 : null,
             undiscountedGrossUnitPrice:
-              input.discount.undiscountedGrossUnitPrice !== undefined
+              input.discount.undiscountedGrossUnitPrice != null
                 ? new Prisma.Decimal(input.discount.undiscountedGrossUnitPrice)
                 : null,
             descriptionShort: input.discount.descriptionShort ?? null,
@@ -338,11 +338,11 @@ export function buildProductUpdateData(
               mapDiscountSource(input.discount.source) ??
               DiscountSource.UNKNOWN,
             undiscountedGrossPrice:
-              input.discount.undiscountedGrossPrice !== undefined
+              input.discount.undiscountedGrossPrice != null
                 ? new Prisma.Decimal(input.discount.undiscountedGrossPrice)
                 : null,
             undiscountedGrossUnitPrice:
-              input.discount.undiscountedGrossUnitPrice !== undefined
+              input.discount.undiscountedGrossUnitPrice != null
                 ? new Prisma.Decimal(input.discount.undiscountedGrossUnitPrice)
                 : null,
             descriptionShort: input.discount.descriptionShort ?? null,
