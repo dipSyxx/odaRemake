@@ -9,16 +9,24 @@ type Params = { params: { id: string } };
 const userUpdateSchema = z
   .object({
     email: z.string().email().optional(),
-    name: z.string().min(1).nullable().optional(),
+    name: z.string().min(1, "Navn kan ikke være tomt").nullable().optional(),
     phone: z
       .string()
       .trim()
-      .min(8)
-      .regex(/^[0-9+\s()-]+$/)
+      .min(8, "Telefonnummeret må være minst 8 tegn")
+      .regex(
+        /^[0-9+\s()-]+$/,
+        "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-",
+      )
       .nullable()
       .optional(),
-    address: z.string().trim().min(5).nullable().optional(),
-    password: z.string().min(8).optional(),
+    address: z
+      .string()
+      .trim()
+      .min(5, "Adressen må være minst 5 tegn")
+      .nullable()
+      .optional(),
+    password: z.string().min(8, "Passordet må være minst 8 tegn").optional(),
   })
   .strict();
 
@@ -29,7 +37,7 @@ export async function GET(_: NextRequest, { params }: Params) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found." }, { status: 404 });
+      return NextResponse.json({ error: "Fant ikke bruker." }, { status: 404 });
     }
 
     return NextResponse.json({ data: serializeUser(user) });
@@ -45,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json(
-        { error: "No fields provided for update." },
+        { error: "Ingen felter ble sendt inn for oppdatering." },
         { status: 400 }
       );
     }
@@ -71,19 +79,22 @@ export async function PUT(request: NextRequest, { params }: Params) {
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
-        return NextResponse.json({ error: "User not found." }, { status: 404 });
+        return NextResponse.json(
+          { error: "Fant ikke bruker." },
+          { status: 404 },
+        );
       }
       if (error.code === "P2002") {
         const target = (error.meta?.target ?? []) as string[];
         if (Array.isArray(target) && target.includes("phone")) {
           return NextResponse.json(
-            { error: "Phone number already exists." },
+            { error: "Telefonnummeret er allerede i bruk." },
             { status: 409 },
           );
         }
         return NextResponse.json(
-          { error: "Email already exists." },
-          { status: 409 }
+          { error: "E-postadressen er allerede i bruk." },
+          { status: 409 },
         );
       }
     }
@@ -99,7 +110,10 @@ export async function DELETE(_: NextRequest, { params }: Params) {
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
-        return NextResponse.json({ error: "User not found." }, { status: 404 });
+        return NextResponse.json(
+          { error: "Fant ikke bruker." },
+          { status: 404 },
+        );
       }
     }
     return handleError(error);
@@ -109,11 +123,11 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 function handleError(error: unknown) {
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { error: "ValidationError", issues: error.errors },
+      { error: "Valideringsfeil", issues: error.errors },
       { status: 422 }
     );
   }
 
-  console.error("Unexpected API error:", error);
-  return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  console.error("Uventet API-feil:", error);
+  return NextResponse.json({ error: "Intern tjenerfeil" }, { status: 500 });
 }

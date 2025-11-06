@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import {
   Form,
   FormControl,
@@ -18,6 +23,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { useTheme } from "@/lib/theme-provider";
+import { Loader2 } from "lucide-react";
 import { Header } from "@/components/shared/header";
 
 type AddressSuggestion = {
@@ -30,20 +36,18 @@ type AddressSuggestion = {
 const registerSchema = z
   .object({
     email: z.string().email("Ugyldig e-post"),
-    name: z.string().min(2, "Minst 2 tegn").optional(),
+    name: z.string().min(2, "Navn må bestå av minst 2 tegn").optional(),
     phone: z
       .string()
       .min(8, "Oppgi et gyldig telefonnummer")
       .regex(
         /^[0-9+\s()-]+$/,
-        "Telefonnummer kan bare inneholde tall, mellomrom og +()-"
+        "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-"
       ),
-    address: z
-      .string()
-      .min(5, "Velg en adresse fra listen eller søk etter adressen din"),
+    address: z.string().min(5, "Velg en adresse fra listen"),
     addressId: z.string().min(1, "Velg en adresse fra listen"),
-    password: z.string().min(8, "Minst 8 tegn"),
-    confirm: z.string().min(8, "Minst 8 tegn"),
+    password: z.string().min(8, "Passordet må være minst 8 tegn"),
+    confirm: z.string().min(8, "Bekreft passordet med minst 8 tegn"),
   })
   .refine((vals) => vals.password === vals.confirm, {
     message: "Passordene må være like",
@@ -60,6 +64,9 @@ export default function RegisterPage() {
   const [addressFetchError, setAddressFetchError] = useState<string | null>(
     null
   );
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const manualCloseRef = useRef(false);
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -81,52 +88,86 @@ export default function RegisterPage() {
     setAddressQuery(addressValue);
   }, [addressValue]);
 
-  async function handleAddressSearch(query: string) {
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
+  const trimmedAddressQuery = addressQuery.trim();
+
+  useEffect(() => {
+    if (trimmedAddressQuery.length === 0) {
       setAddressResults([]);
-      setAddressFetchError("Skriv minst to tegn for å søke etter adresse");
+      setAddressFetchError(null);
+      setIsSearching(false);
+      setIsPopoverOpen(false);
+      manualCloseRef.current = false;
       return;
     }
 
-    setIsSearching(true);
-    setAddressFetchError(null);
-
-    try {
-      const response = await fetch(
-        `/api/address-search?query=${encodeURIComponent(trimmed)}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch addresses");
-      }
-      const data = (await response.json()) as {
-        data?: AddressSuggestion[];
-        error?: string;
-      };
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setAddressResults(data.data ?? []);
-      if (!data.data || data.data.length === 0) {
-        setAddressFetchError("Fant ingen adresser for søket ditt");
-      }
-    } catch (fetchError) {
-      console.error(fetchError);
+    if (trimmedAddressQuery.length < 2) {
       setAddressResults([]);
-      setAddressFetchError("Kunne ikke hente adresser. Prøv igjen senere.");
-    } finally {
+      setAddressFetchError(null);
       setIsSearching(false);
+      setIsPopoverOpen(false);
+      manualCloseRef.current = false;
+      return;
     }
-  }
+
+    if (manualCloseRef.current) {
+      return;
+    }
+
+    setIsPopoverOpen(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      setAddressFetchError(null);
+      try {
+        const response = await fetch(
+          `/api/address-search?query=${encodeURIComponent(
+            trimmedAddressQuery
+          )}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) {
+          throw new Error("Klarte ikke å hente adresser");
+        }
+        const data = (await response.json()) as {
+          data?: AddressSuggestion[];
+          error?: string;
+        };
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const results = data.data ?? [];
+        setAddressResults(results);
+        if (results.length === 0) {
+          setAddressFetchError("Fant ingen adresser for søket ditt");
+        }
+      } catch (fetchError) {
+        if ((fetchError as Error).name === "AbortError") return;
+        console.error(fetchError);
+        setAddressResults([]);
+        setAddressFetchError("Kunne ikke hente adresser. Prøv igjen senere.");
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [trimmedAddressQuery]);
 
   function handleAddressSelect(address: AddressSuggestion) {
     const label = `${address.main_text}, ${address.secondary_text}`;
     form.setValue("address", label, { shouldValidate: true });
     form.setValue("addressId", address.address_id, { shouldValidate: true });
+    setAddressQuery(label);
+    manualCloseRef.current = true;
     setAddressResults([]);
     setAddressFetchError(null);
+    setIsPopoverOpen(false);
+    addressInputRef.current?.focus();
   }
 
   function resetAddressSelection() {
@@ -135,6 +176,9 @@ export default function RegisterPage() {
     setAddressQuery("");
     setAddressResults([]);
     setAddressFetchError(null);
+    setIsPopoverOpen(false);
+    manualCloseRef.current = false;
+    addressInputRef.current?.focus();
   }
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
@@ -174,7 +218,7 @@ export default function RegisterPage() {
                   ? "/images/login-image-light.svg"
                   : "/images/login-image-dark.svg"
               }
-              alt="Oda login image"
+              alt="Register illustration"
               width={385}
               height={278}
               className="fill-white h-full w-full"
@@ -198,7 +242,7 @@ export default function RegisterPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Din e-post</FormLabel>
+                          <FormLabel>E-post</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="navn@epost.no"
@@ -246,38 +290,97 @@ export default function RegisterPage() {
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Adresse</FormLabel>
+                          <FormLabel>Address</FormLabel>
                           <div className="space-y-2">
-                            <FormControl>
-                              <div className="flex gap-2">
-                                <Input
-                                  {...field}
-                                  value={addressQuery}
-                                  onChange={(event) => {
-                                    const value = event.target.value;
-                                    field.onChange(value);
-                                    setAddressQuery(value);
-                                    if (addressId) {
-                                      form.setValue("addressId", "", {
-                                        shouldValidate: true,
-                                      });
-                                    }
-                                    setAddressFetchError(null);
-                                  }}
-                                  placeholder="Søk etter adressen din"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleAddressSearch(addressQuery)
-                                  }
-                                  disabled={isSearching}
-                                >
-                                  {isSearching ? "Søker..." : "Søk"}
-                                </Button>
-                              </div>
-                            </FormControl>
+                            <Popover
+                              modal={false}
+                              open={isPopoverOpen}
+                              onOpenChange={(open) => {
+                                setIsPopoverOpen(open);
+                                if (!open) {
+                                  manualCloseRef.current = true;
+                                  setAddressResults([]);
+                                  setAddressFetchError(null);
+                                  setIsSearching(false);
+                                } else {
+                                  manualCloseRef.current = false;
+                                }
+                              }}
+                            >
+                              <PopoverAnchor asChild>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    ref={(node) => {
+                                      field.ref(node);
+                                      addressInputRef.current = node;
+                                    }}
+                                    value={addressQuery}
+                                    onChange={(event) => {
+                                      const value = event.target.value;
+                                      field.onChange(value);
+                                      setAddressQuery(value);
+                                      manualCloseRef.current = false;
+                                      if (addressId) {
+                                        form.setValue("addressId", "", {
+                                          shouldValidate: true,
+                                        });
+                                      }
+                                      setAddressFetchError(null);
+                                    }}
+                                    placeholder="Søk etter adressen din"
+                                  />
+                                </FormControl>
+                              </PopoverAnchor>
+                              <PopoverContent
+                                align="start"
+                                className="p-0 w-[min(320px,calc(100vw-4rem))]"
+                                side="bottom"
+                                onOpenAutoFocus={(event) =>
+                                  event.preventDefault()
+                                }
+                                onCloseAutoFocus={(event) =>
+                                  event.preventDefault()
+                                }
+                              >
+                                <div className="py-2">
+                                  {isSearching ? (
+                                    <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      Søker etter adresser ...
+                                    </div>
+                                  ) : null}
+                                  {!isSearching && addressResults.length > 0 ? (
+                                    <div className="max-h-60 overflow-y-auto">
+                                      {addressResults.map((item) => (
+                                        <button
+                                          key={item.address_id}
+                                          type="button"
+                                          className="w-full text-left px-3 py-2 hover:bg-secondary transition-colors"
+                                          onClick={() =>
+                                            handleAddressSelect(item)
+                                          }
+                                        >
+                                          <div className="text-sm font-medium">
+                                            {item.main_text}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground">
+                                            {item.secondary_text}
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                  {!isSearching &&
+                                  addressResults.length === 0 &&
+                                  addressFetchError ? (
+                                    <p className="px-3 py-2 text-xs text-destructive">
+                                      {addressFetchError}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                             {addressId ? (
                               <p className="text-xs text-muted-foreground">
                                 Valgt adresse: {addressValue}{" "}
@@ -289,30 +392,6 @@ export default function RegisterPage() {
                                   Endre
                                 </button>
                               </p>
-                            ) : null}
-                            {addressFetchError ? (
-                              <p className="text-xs text-destructive">
-                                {addressFetchError}
-                              </p>
-                            ) : null}
-                            {addressResults.length > 0 ? (
-                              <div className="rounded-md border border-border divide-y divide-border bg-background max-h-48 overflow-y-auto">
-                                {addressResults.map((item) => (
-                                  <button
-                                    key={item.address_id}
-                                    type="button"
-                                    className="w-full text-left px-3 py-2 hover:bg-secondary transition-colors"
-                                    onClick={() => handleAddressSelect(item)}
-                                  >
-                                    <div className="text-sm font-medium">
-                                      {item.main_text}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {item.secondary_text}
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
                             ) : null}
                           </div>
                           <FormMessage />
@@ -343,7 +422,7 @@ export default function RegisterPage() {
                         name="confirm"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Gjenta passord</FormLabel>
+                            <FormLabel>Bekreft passord</FormLabel>
                             <FormControl>
                               <Input type="password" {...field} />
                             </FormControl>

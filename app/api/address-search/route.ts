@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: "Failed to fetch addresses." },
+        { error: "Klarte ikke å hente adresser." },
         { status: response.status },
       );
     }
@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
     const data = (await response.json()) as ExternalAddressResponse[];
     return NextResponse.json({ data });
   } catch (error) {
-    console.error("Address lookup failed", error);
+    console.error("Adresseoppslag feilet", error);
     return NextResponse.json(
-      { error: "Unable to retrieve addresses." },
+      { error: "Kunne ikke hente adresser." },
       { status: 500 },
     );
   }

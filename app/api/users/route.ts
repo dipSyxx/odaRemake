@@ -16,16 +16,22 @@ const userCreateSchema = z.object({
   phone: z
     .string()
     .trim()
-    .min(8, "Phone number must be at least 8 characters")
+    .min(8, "Telefonnummeret må være minst 8 tegn")
     .regex(
       /^[0-9+\s()-]+$/,
-      "Phone number may only include digits, spaces, and +()-",
+      "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-",
     ),
-  address: z.string().trim().min(5, "Address must be at least 5 characters"),
+  address: z
+    .string()
+    .trim()
+    .min(5, "Adressen må være minst 5 tegn"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/^(?=.*[A-Za-z])(?=.*\d).+$/, "Must include letters and numbers"),
+    .min(8, "Passordet må være minst 8 tegn")
+    .regex(
+      /^(?=.*[A-Za-z])(?=.*\d).+$/,
+      "Må inneholde både bokstaver og tall",
+    ),
 });
 
 export async function GET(request: NextRequest) {
@@ -85,12 +91,12 @@ export async function POST(request: NextRequest) {
         const target = (error.meta?.target ?? []) as string[];
         if (Array.isArray(target) && target.includes("phone")) {
           return NextResponse.json(
-            { error: "Phone number already exists." },
+            { error: "Telefonnummeret er allerede i bruk." },
             { status: 409 },
           );
         }
         return NextResponse.json(
-          { error: "Email already exists." },
+          { error: "E-postadressen er allerede i bruk." },
           { status: 409 }
         );
       }
@@ -102,11 +108,11 @@ export async function POST(request: NextRequest) {
 function handleError(error: unknown) {
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { error: "ValidationError", issues: error.errors },
+      { error: "Valideringsfeil", issues: error.errors },
       { status: 422 }
     );
   }
 
-  console.error("Unexpected API error:", error);
-  return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  console.error("Uventet API-feil:", error);
+  return NextResponse.json({ error: "Intern tjenerfeil" }, { status: 500 });
 }
