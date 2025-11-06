@@ -6,6 +6,7 @@ import {
   BookOpen,
   Building2,
   ChevronDown,
+  CircleUserRound,
   Layers,
   Moon,
   Search,
@@ -44,8 +45,10 @@ const NAV_ITEMS: { icon: LucideIcon; label: string; hasCaret?: boolean }[] = [
 
 export function Header() {
   const { theme, setTheme } = useTheme();
-  const { cart } = useUserStore();
+  const { cart, user } = useUserStore();
   const [open, setOpen] = useState(false);
+  const greetingName =
+    user?.name?.trim()?.split(/\s+/)[0] ?? user?.email?.split("@")[0] ?? null;
 
   return (
     <>
@@ -167,22 +170,50 @@ export function Header() {
                 initial="hidden"
                 animate="visible"
               >
-                <motion.button
-                  className="text-foreground text-sm hover:text-muted-foreground hidden md:inline"
-                  variants={fadeInUp}
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Link href="/login">Logg inn</Link>
-                </motion.button>
-                <motion.div variants={fadeInUp}>
-                  <Link href="/register">
-                    <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 py-0 h-7">
-                      <span className="hidden sm:inline">Opprett konto</span>
-                      <span className="sm:hidden">Opprett</span>
-                    </Button>
-                  </Link>
-                </motion.div>
+                {user ? (
+                  <>
+                    <motion.span
+                      className="text-foreground text-sm font-medium"
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                      Hei{greetingName ? ` ${greetingName}!` : "!"}
+                    </motion.span>
+                    <motion.div variants={fadeInUp}>
+                      <Link href="/profile" aria-label="Gå til profilen">
+                        <Button
+                          variant="outline"
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          <CircleUserRound className="h-4 w-4" />
+                          <span className="hidden sm:inline">Profil</span>
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  </>
+                ) : (
+                  <>
+                    <motion.button
+                      className="text-foreground text-sm hover:text-muted-foreground hidden md:inline"
+                      variants={fadeInUp}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link href="/login">Logg inn</Link>
+                    </motion.button>
+                    <motion.div variants={fadeInUp}>
+                      <Link href="/register">
+                        <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 py-0 h-7">
+                          <span className="hidden sm:inline">
+                            Opprett konto
+                          </span>
+                          <span className="sm:hidden">Opprett</span>
+                        </Button>
+                      </Link>
+                    </motion.div>
+                  </>
+                )}
               </motion.div>
             </div>
           </motion.nav>
