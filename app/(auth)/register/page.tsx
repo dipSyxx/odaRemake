@@ -227,9 +227,9 @@ export default function RegisterPage() {
           </div>
           <div>
             <h1 className="text-4xl font-bold mb-2">Opprett konto</h1>
-            <p className="text-muted-foreground mb-8">
-              Bli klar for å handle hos oss.
-            </p>
+          <p className="text-muted-foreground mb-8">
+            Bli klar for å handle hos oss.
+          </p>
             <Card className="bg-transparent border-0 shadow-none p-0">
               <CardContent className="p-0">
                 <Form {...form}>
@@ -328,7 +328,7 @@ export default function RegisterPage() {
                                       }
                                       setAddressFetchError(null);
                                     }}
-                                    placeholder="Søk etter adressen din"
+                                  placeholder="Søk etter adressen din"
                                   />
                                 </FormControl>
                               </PopoverAnchor>
@@ -345,10 +345,10 @@ export default function RegisterPage() {
                               >
                                 <div className="py-2">
                                   {isSearching ? (
-                                    <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                      Søker etter adresser ...
-                                    </div>
+                                  <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Søker etter adresser …
+                                  </div>
                                   ) : null}
                                   {!isSearching && addressResults.length > 0 ? (
                                     <div className="max-h-60 overflow-y-auto">
