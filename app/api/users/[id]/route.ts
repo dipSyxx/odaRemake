@@ -16,7 +16,7 @@ const userUpdateSchema = z
       .min(8, "Telefonnummeret må være minst 8 tegn")
       .regex(
         /^[0-9+\s()-]+$/,
-        "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-",
+        "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-"
       )
       .nullable()
       .optional(),
@@ -27,8 +27,18 @@ const userUpdateSchema = z
       .nullable()
       .optional(),
     password: z.string().min(8, "Passordet må være minst 8 tegn").optional(),
+    currentPassword: z.string().min(8, "Oppgi nåværende passord").optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.password && !data.currentPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currentPassword"],
+        message: "Oppgi nåværende passord for å endre det.",
+      });
+    }
+  });
 
 export async function GET(_: NextRequest, { params }: Params) {
   try {
@@ -51,7 +61,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const raw = await request.json();
     const data = userUpdateSchema.parse(raw);
 
-    if (Object.keys(data).length === 0) {
+    const { email, name, phone, address, password, currentPassword } = data;
+
+    const hasUpdates =
+      email !== undefined ||
+      name !== undefined ||
+      phone !== undefined ||
+      address !== undefined ||
+      password !== undefined;
+
+    if (!hasUpdates) {
       return NextResponse.json(
         { error: "Ingen felter ble sendt inn for oppdatering." },
         { status: 400 }
@@ -59,18 +78,41 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     let passwordHash: string | undefined;
-    if (data.password) {
+    if (password) {
+      const existing = await prisma.user.findUnique({
+        where: { id: params.id },
+        select: { passwordHash: true },
+      });
+
+      if (!existing || !existing.passwordHash) {
+        return NextResponse.json(
+          { error: "Kan ikke endre passord på denne kontoen." },
+          { status: 400 }
+        );
+      }
+
       const bcrypt = await import("bcryptjs");
-      passwordHash = await bcrypt.hash(data.password, 10);
+      const ok = await bcrypt.compare(
+        currentPassword as string,
+        existing.passwordHash
+      );
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Nåværende passord er feil." },
+          { status: 401 }
+        );
+      }
+
+      passwordHash = await bcrypt.hash(password, 10);
     }
 
     const user = await prisma.user.update({
       where: { id: params.id },
       data: {
-        email: data.email?.toLowerCase(),
-        name: data.name === undefined ? undefined : data.name,
-        phone: data.phone === undefined ? undefined : data.phone ?? null,
-        address: data.address === undefined ? undefined : data.address ?? null,
+        email: email?.toLowerCase(),
+        name: name === undefined ? undefined : name,
+        phone: phone === undefined ? undefined : phone ?? null,
+        address: address === undefined ? undefined : address ?? null,
         ...(passwordHash ? { passwordHash } : {}),
       },
     });
@@ -81,7 +123,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       if (error.code === "P2025") {
         return NextResponse.json(
           { error: "Fant ikke bruker." },
-          { status: 404 },
+          { status: 404 }
         );
       }
       if (error.code === "P2002") {
@@ -89,12 +131,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
         if (Array.isArray(target) && target.includes("phone")) {
           return NextResponse.json(
             { error: "Telefonnummeret er allerede i bruk." },
-            { status: 409 },
+            { status: 409 }
           );
         }
         return NextResponse.json(
           { error: "E-postadressen er allerede i bruk." },
-          { status: 409 },
+          { status: 409 }
         );
       }
     }
@@ -112,7 +154,7 @@ export async function DELETE(_: NextRequest, { params }: Params) {
       if (error.code === "P2025") {
         return NextResponse.json(
           { error: "Fant ikke bruker." },
-          { status: 404 },
+          { status: 404 }
         );
       }
     }

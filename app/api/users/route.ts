@@ -37,7 +37,7 @@ const userCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const query = listQuerySchema.parse(
-      Object.fromEntries(request.nextUrl.searchParams.entries())
+      Object.fromEntries(request.nextUrl.searchParams.entries()),
     );
     const { skip = 0, take = 50, search } = query;
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         }
         return NextResponse.json(
           { error: "E-postadressen er allerede i bruk." },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
@@ -109,7 +109,7 @@ function handleError(error: unknown) {
   if (error instanceof ZodError) {
     return NextResponse.json(
       { error: "Valideringsfeil", issues: error.errors },
-      { status: 422 }
+      { status: 422 },
     );
   }
 
