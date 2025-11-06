@@ -1,7 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronDown, Moon, Search, ShoppingCart, Sun } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  Building2,
+  ChevronDown,
+  Layers,
+  Moon,
+  Search,
+  ShoppingCart,
+  Sun,
+  Tag,
+} from "lucide-react";
 import { useTheme } from "../../lib/theme-provider";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -24,11 +35,11 @@ import {
 } from "@/components/ui/drawer";
 import { useState } from "react";
 
-const NAV_ITEMS: { icon: string; label: string; hasCaret?: boolean }[] = [
-  { icon: "\u{1F3F7}\uFE0F", label: "Kategorier", hasCaret: true },
-  { icon: "\u23F0", label: "Tilbud" },
-  { icon: "\u{1F373}", label: "Kokeboka" },
-  { icon: "\u{1F3E2}", label: "For bedrifter" },
+const NAV_ITEMS: { icon: LucideIcon; label: string; hasCaret?: boolean }[] = [
+  { icon: Layers, label: "Kategorier", hasCaret: true },
+  { icon: Tag, label: "Tilbud" },
+  { icon: BookOpen, label: "Kokeboka" },
+  { icon: Building2, label: "For bedrifter" },
 ];
 
 export function Header() {
@@ -141,7 +152,7 @@ export function Header() {
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.96 }}
                   >
-                    <span className="text-lg">{item.icon}</span>
+                    <item.icon className="h-4 w-4" aria-hidden="true" />
                     <span className="hidden sm:inline">{item.label}</span>
                     {item.hasCaret ? (
                       <ChevronDown className="h-4 w-4 hidden sm:inline" />
