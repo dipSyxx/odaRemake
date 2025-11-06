@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const ADDRESS_SEARCH_URL =
+  "https://oda.com/tienda-web-api/v1/geodata/address-search/";
+
+type ExternalAddressResponse = {
+  address_id: string;
+  main_text: string;
+  secondary_text: string;
+  is_complete: boolean;
+};
+
+export async function GET(request: NextRequest) {
+  const query = request.nextUrl.searchParams.get("query")?.trim();
+
+  if (!query) {
+    return NextResponse.json({ data: [] });
+  }
+
+  try {
+    const response = await fetch(
+      `${ADDRESS_SEARCH_URL}?query=${encodeURIComponent(query)}`,
+      {
+        headers: {
+          accept: "application/json",
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "Failed to fetch addresses." },
+        { status: response.status },
+      );
+    }
+
+    const data = (await response.json()) as ExternalAddressResponse[];
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error("Address lookup failed", error);
+    return NextResponse.json(
+      { error: "Unable to retrieve addresses." },
+      { status: 500 },
+    );
+  }
+}

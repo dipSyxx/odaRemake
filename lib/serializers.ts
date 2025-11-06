@@ -167,6 +167,8 @@ export function serializeUser(user: User) {
     id: user.id,
     email: user.email,
     name: user.name,
+    phone: user.phone ?? null,
+    address: user.address ?? null,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };

@@ -10,6 +10,14 @@ const userUpdateSchema = z
   .object({
     email: z.string().email().optional(),
     name: z.string().min(1).nullable().optional(),
+    phone: z
+      .string()
+      .trim()
+      .min(8)
+      .regex(/^[0-9+\s()-]+$/)
+      .nullable()
+      .optional(),
+    address: z.string().trim().min(5).nullable().optional(),
     password: z.string().min(8).optional(),
   })
   .strict();
@@ -53,6 +61,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
       data: {
         email: data.email?.toLowerCase(),
         name: data.name === undefined ? undefined : data.name,
+        phone: data.phone === undefined ? undefined : data.phone ?? null,
+        address: data.address === undefined ? undefined : data.address ?? null,
         ...(passwordHash ? { passwordHash } : {}),
       },
     });
@@ -64,6 +74,13 @@ export async function PUT(request: NextRequest, { params }: Params) {
         return NextResponse.json({ error: "User not found." }, { status: 404 });
       }
       if (error.code === "P2002") {
+        const target = (error.meta?.target ?? []) as string[];
+        if (Array.isArray(target) && target.includes("phone")) {
+          return NextResponse.json(
+            { error: "Phone number already exists." },
+            { status: 409 },
+          );
+        }
         return NextResponse.json(
           { error: "Email already exists." },
           { status: 409 }

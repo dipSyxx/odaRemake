@@ -13,6 +13,15 @@ const listQuerySchema = z.object({
 const userCreateSchema = z.object({
   email: z.string().email(),
   name: z.string().trim().min(2).optional(),
+  phone: z
+    .string()
+    .trim()
+    .min(8, "Phone number must be at least 8 characters")
+    .regex(
+      /^[0-9+\s()-]+$/,
+      "Phone number may only include digits, spaces, and +()-",
+    ),
+  address: z.string().trim().min(5, "Address must be at least 5 characters"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -34,6 +43,8 @@ export async function GET(request: NextRequest) {
             OR: [
               { email: { contains: search, mode: "insensitive" } },
               { name: { contains: search, mode: "insensitive" } },
+              { phone: { contains: search, mode: "insensitive" } },
+              { address: { contains: search, mode: "insensitive" } },
             ],
           }
         : undefined,
@@ -61,6 +72,8 @@ export async function POST(request: NextRequest) {
       data: {
         email: data.email.toLowerCase(),
         name: data.name,
+        phone: data.phone,
+        address: data.address,
         passwordHash,
       },
     });
@@ -69,6 +82,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
+        const target = (error.meta?.target ?? []) as string[];
+        if (Array.isArray(target) && target.includes("phone")) {
+          return NextResponse.json(
+            { error: "Phone number already exists." },
+            { status: 409 },
+          );
+        }
         return NextResponse.json(
           { error: "Email already exists." },
           { status: 409 }
