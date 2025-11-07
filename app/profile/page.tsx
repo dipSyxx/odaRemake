@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,7 +34,7 @@ const profileSchema = z.object({
     .transform((value) => value.trim())
     .refine(
       (value) => value.length === 0 || value.length >= 2,
-      "Navn må bestå av minst 2 tegn",
+      "Navn må bestå av minst 2 tegn"
     ),
   phone: z
     .string()
@@ -42,12 +42,9 @@ const profileSchema = z.object({
     .min(8, "Telefonnummeret må være minst 8 tegn")
     .regex(
       phoneRegex,
-      "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-",
+      "Telefonnummer kan bare inneholde tall, mellomrom og tegnene +()-"
     ),
-  address: z
-    .string()
-    .trim()
-    .min(5, "Adressen må være minst 5 tegn"),
+  address: z.string().trim().min(5, "Adressen må være minst 5 tegn"),
 });
 
 const passwordSchema = z
@@ -60,29 +57,22 @@ const passwordSchema = z
       .min(8, "Nytt passord må være minst 8 tegn")
       .regex(
         /^(?=.*[A-Za-z])(?=.*\d).+$/,
-        "Passordet må inneholde både bokstaver og tall",
+        "Passordet må inneholde både bokstaver og tall"
       ),
-    confirmPassword: z
-      .string()
-      .min(8, "Bekreft passordet med minst 8 tegn"),
+    confirmPassword: z.string().min(8, "Bekreft passordet med minst 8 tegn"),
   })
-  .refine(
-    (values) => values.newPassword === values.confirmPassword,
-    {
-      message: "Passordene må være like",
-      path: ["confirmPassword"],
-    },
-  )
-  .refine(
-    (values) => values.newPassword !== values.currentPassword,
-    {
-      message: "Nytt passord må være forskjellig fra det gamle",
-      path: ["newPassword"],
-    },
-  );
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    message: "Passordene må være like",
+    path: ["confirmPassword"],
+  })
+  .refine((values) => values.newPassword !== values.currentPassword, {
+    message: "Nytt passord må være forskjellig fra det gamle",
+    path: ["newPassword"],
+  });
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const { user, setUser, setCart, fetchMe } = useUserStore();
   const [isLoading, setIsLoading] = useState(!user);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
@@ -158,7 +148,7 @@ export default function ProfilePage() {
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         setProfileError(
-          data?.error ?? "Kunne ikke oppdatere profilen. Prøv igjen senere.",
+          data?.error ?? "Kunne ikke oppdatere profilen. Prøv igjen senere."
         );
         return;
       }
@@ -170,6 +160,11 @@ export default function ProfilePage() {
         phone: data.data?.phone ?? "",
         address: data.data?.address ?? "",
       });
+      if (typeof updateSession === "function") {
+        await updateSession({
+          name: data.data?.name ?? undefined,
+        });
+      }
       setProfileMessage("Profilen er oppdatert.");
     } catch (error) {
       console.error(error);
@@ -198,7 +193,7 @@ export default function ProfilePage() {
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         setPasswordError(
-          data?.error ?? "Kunne ikke endre passordet. Prøv igjen senere.",
+          data?.error ?? "Kunne ikke endre passordet. Prøv igjen senere."
         );
         return;
       }
@@ -221,7 +216,7 @@ export default function ProfilePage() {
     if (!user) return;
     setDeleteError(null);
     const confirmed = window.confirm(
-      "Er du sikker på at du vil slette kontoen din? Dette kan ikke angres.",
+      "Er du sikker på at du vil slette kontoen din? Dette kan ikke angres."
     );
     if (!confirmed) return;
 
@@ -233,7 +228,7 @@ export default function ProfilePage() {
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         setDeleteError(
-          data?.error ?? "Kunne ikke slette kontoen. Prøv igjen senere.",
+          data?.error ?? "Kunne ikke slette kontoen. Prøv igjen senere."
         );
         return;
       }
@@ -281,7 +276,8 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-3xl font-bold">Profil</h1>
         <p className="text-muted-foreground mt-2">
-          Oppdater personlige detaljer, endre passord eller administrer kontoen din.
+          Oppdater personlige detaljer, endre passord eller administrer kontoen
+          din.
         </p>
       </div>
 
@@ -291,7 +287,8 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle>Personlig informasjon</CardTitle>
               <CardDescription>
-                Oppdater navn, telefonnummer og adresse som brukes i bestillinger.
+                Oppdater navn, telefonnummer og adresse som brukes i
+                bestillinger.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -458,7 +455,9 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Sesjon</CardTitle>
-              <CardDescription>Avslutt innlogget økt på enheten.</CardDescription>
+              <CardDescription>
+                Avslutt innlogget økt på enheten.
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Button variant="outline" onClick={handleLogout}>
