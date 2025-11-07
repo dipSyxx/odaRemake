@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { z } from "zod";
@@ -27,8 +27,20 @@ import {
 } from "@/components/ui/card";
 import { Loader2, LogOut, Trash2 } from "lucide-react";
 import { Header } from "@/components/shared/header";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 
 const phoneRegex = /^[0-9+\s()-]+$/;
+
+type AddressSuggestion = {
+  address_id: string;
+  main_text: string;
+  secondary_text: string;
+  is_complete: boolean;
+};
 
 const profileSchema = z.object({
   name: z
@@ -85,6 +97,14 @@ export default function ProfilePage() {
   const [profileSubmitting, setProfileSubmitting] = useState(false);
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [addressQuery, setAddressQuery] = useState(user?.address ?? "");
+  const [addressResults, setAddressResults] = useState<AddressSuggestion[]>([]);
+  const [addressFetchError, setAddressFetchError] = useState<string | null>(null);
+  const [isAddressPopoverOpen, setIsAddressPopoverOpen] = useState(false);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const manualAddressCloseRef = useRef(false);
+  const [addressInteracted, setAddressInteracted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -110,11 +130,15 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
+    const initialAddress = user?.address ?? "";
     profileForm.reset({
       name: user?.name ?? "",
       phone: user?.phone ?? "",
-      address: user?.address ?? "",
+      address: initialAddress,
     });
+    setAddressQuery(initialAddress);
+    manualAddressCloseRef.current = false;
+    setAddressInteracted(false);
   }, [user, profileForm]);
 
   const passwordForm = useForm<z.infer<typeof passwordSchema>>({
@@ -127,6 +151,107 @@ export default function ProfilePage() {
   });
 
   const profileDirty = profileForm.formState.isDirty;
+
+  const watchedAddress = profileForm.watch("address");
+
+  useEffect(() => {
+    setAddressQuery(watchedAddress ?? "");
+  }, [watchedAddress]);
+
+  const trimmedAddressQuery = (addressQuery ?? "").trim();
+
+  useEffect(() => {
+    if (!addressInteracted) {
+      return;
+    }
+
+    if (trimmedAddressQuery.length === 0) {
+      setAddressResults([]);
+      setAddressFetchError(null);
+      setIsSearchingAddress(false);
+      setIsAddressPopoverOpen(false);
+      manualAddressCloseRef.current = false;
+      return;
+    }
+
+    if (trimmedAddressQuery.length < 2) {
+      setAddressResults([]);
+      setAddressFetchError(null);
+      setIsSearchingAddress(false);
+      setIsAddressPopoverOpen(false);
+      manualAddressCloseRef.current = false;
+      return;
+    }
+
+    if (manualAddressCloseRef.current) return;
+
+    setIsAddressPopoverOpen(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setIsSearchingAddress(true);
+      setAddressFetchError(null);
+      try {
+        const response = await fetch(
+          `/api/address-search?query=${encodeURIComponent(
+            trimmedAddressQuery
+          )}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch addresses");
+        }
+        const data = (await response.json()) as {
+          data?: AddressSuggestion[];
+          error?: string;
+        };
+        if (data.error) throw new Error(data.error);
+
+        const results = data.data ?? [];
+        setAddressResults(results);
+        if (results.length === 0) {
+          setAddressFetchError("Fant ingen adresser for søket ditt");
+        }
+      } catch (error) {
+        if ((error as Error).name === "AbortError") return;
+        console.error(error);
+        setAddressResults([]);
+        setAddressFetchError("Kunne ikke hente adresser. Prøv igjen senere.");
+      } finally {
+        setIsSearchingAddress(false);
+      }
+    }, 300);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [trimmedAddressQuery, addressInteracted]);
+
+  function handleAddressSelect(address: AddressSuggestion) {
+    const label = `${address.main_text}, ${address.secondary_text}`;
+    setAddressQuery(label);
+    profileForm.setValue("address", label, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setIsAddressPopoverOpen(false);
+    setAddressResults([]);
+    setAddressFetchError(null);
+    manualAddressCloseRef.current = true;
+  }
+
+  function resetAddressSelection() {
+    setAddressQuery("");
+    profileForm.setValue("address", "", {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setAddressResults([]);
+    setAddressFetchError(null);
+    manualAddressCloseRef.current = false;
+    setIsAddressPopoverOpen(false);
+    addressInputRef.current?.focus();
+  }
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 16 },
@@ -312,176 +437,271 @@ export default function ProfilePage() {
             <div className="lg:col-span-2 space-y-6">
               <motion.div variants={fadeInUp}>
                 <Card>
-                <CardHeader>
-                  <CardTitle>Personlig informasjon</CardTitle>
-                  <CardDescription>
-                    Oppdater navn, telefonnummer og adresse som brukes i
-                    bestillinger.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...profileForm}>
-                    <form
-                      onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
-                      className="space-y-6"
-                    >
-                      <FormField
-                        control={profileForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Navn</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ola Nordmann" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            <p className="text-xs text-muted-foreground">
-                              La feltet stå tomt for å skjule navnet ditt.
-                            </p>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={profileForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Telefonnummer</FormLabel>
-                            <FormControl>
-                              <Input inputMode="tel" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={profileForm.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Adresse</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {profileError ? (
-                        <p className="text-sm text-destructive">
-                          {profileError}
-                        </p>
-                      ) : null}
-                      {profileMessage ? (
-                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                          {profileMessage}
-                        </p>
-                      ) : null}
-
-                      <div className="flex justify-end">
-                        <Button
-                          type="submit"
-                          disabled={profileSubmitting || !profileDirty}
-                        >
-                          {profileSubmitting ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Oppdaterer ...
-                            </>
-                          ) : (
-                            "Lagre endringer"
+                  <CardHeader>
+                    <CardTitle>Personlig informasjon</CardTitle>
+                    <CardDescription>
+                      Oppdater navn, telefonnummer og adresse som brukes i
+                      bestillinger.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Form {...profileForm}>
+                      <form
+                        onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
+                        className="space-y-6"
+                      >
+                        <FormField
+                          control={profileForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Navn</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ola Nordmann" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              <p className="text-xs text-muted-foreground">
+                                La feltet stå tomt for å skjule navnet ditt.
+                              </p>
+                            </FormItem>
                           )}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </CardContent>
+                        />
+
+                        <FormField
+                          control={profileForm.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefonnummer</FormLabel>
+                              <FormControl>
+                                <Input inputMode="tel" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={profileForm.control}
+                          name="address"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Adresse</FormLabel>
+                            <Popover
+                              modal={false}
+                              open={isAddressPopoverOpen}
+                              onOpenChange={(open) => {
+                                setIsAddressPopoverOpen(open);
+                                  if (!open) {
+                                    manualAddressCloseRef.current = true;
+                                    setAddressResults([]);
+                                    setAddressFetchError(null);
+                                    setIsSearchingAddress(false);
+                                  } else {
+                                    manualAddressCloseRef.current = false;
+                                  }
+                                }}
+                              >
+                                <PopoverAnchor asChild>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      ref={(node) => {
+                                        field.ref(node);
+                                        addressInputRef.current = node;
+                                      }}
+                                      value={addressQuery}
+                                      onChange={(event) => {
+                                        const value = event.target.value;
+                                        field.onChange(value);
+                                        setAddressQuery(value);
+                                        manualAddressCloseRef.current = false;
+                                        setAddressFetchError(null);
+                                        if (!addressInteracted) {
+                                          setAddressInteracted(true);
+                                        }
+                                      }}
+                                      placeholder="Søk etter adressen din"
+                                    />
+                                  </FormControl>
+                                </PopoverAnchor>
+                              <PopoverContent
+                                align="start"
+                                className="p-0 w-[min(320px,calc(100vw-4rem))]"
+                                side="bottom"
+                                onOpenAutoFocus={(event) => event.preventDefault()}
+                                onCloseAutoFocus={(event) => event.preventDefault()}
+                              >
+                                  <div className="py-2">
+                                    {isSearchingAddress ? (
+                                      <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Søker adresser ...
+                                      </div>
+                                    ) : null}
+                                    {!isSearchingAddress &&
+                                    addressResults.length > 0 ? (
+                                      <div className="max-h-60 overflow-y-auto">
+                                        {addressResults.map((item) => (
+                                          <button
+                                            key={item.address_id}
+                                            type="button"
+                                            className="w-full text-left px-3 py-2 hover:bg-secondary transition-colors"
+                                            onClick={() =>
+                                              handleAddressSelect(item)
+                                            }
+                                          >
+                                            <div className="text-sm font-medium">
+                                              {item.main_text}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              {item.secondary_text}
+                                            </div>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                    {!isSearchingAddress &&
+                                    addressResults.length === 0 &&
+                                    addressFetchError ? (
+                                      <p className="px-3 py-2 text-xs text-destructive">
+                                        {addressFetchError}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                              {addressQuery ? (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Valgt adresse: {addressQuery}{" "}
+                                  <button
+                                    type="button"
+                                    className="text-xs underline"
+                                    onClick={resetAddressSelection}
+                                  >
+                                    Endre
+                                  </button>
+                                </p>
+                              ) : null}
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {profileError ? (
+                          <p className="text-sm text-destructive">
+                            {profileError}
+                          </p>
+                        ) : null}
+                        {profileMessage ? (
+                          <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                            {profileMessage}
+                          </p>
+                        ) : null}
+
+                        <div className="flex justify-end">
+                          <Button
+                            type="submit"
+                            disabled={profileSubmitting || !profileDirty}
+                          >
+                            {profileSubmitting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Oppdaterer ...
+                              </>
+                            ) : (
+                              "Lagre endringer"
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </CardContent>
                 </Card>
               </motion.div>
 
               <motion.div variants={fadeInUp}>
                 <Card>
-                <CardHeader>
-                  <CardTitle>Endre passord</CardTitle>
-                  <CardDescription>
-                    Oppgi nåværende passord for å sette et nytt.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...passwordForm}>
-                    <form
-                      onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}
-                      className="space-y-6"
-                    >
-                      <FormField
-                        control={passwordForm.control}
-                        name="currentPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nåværende passord</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
+                  <CardHeader>
+                    <CardTitle>Endre passord</CardTitle>
+                    <CardDescription>
+                      Oppgi nåværende passord for å sette et nytt.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Form {...passwordForm}>
+                      <form
+                        onSubmit={passwordForm.handleSubmit(
+                          handlePasswordSubmit
                         )}
-                      />
-                      <FormField
-                        control={passwordForm.control}
-                        name="newPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nytt passord</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={passwordForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Bekreft nytt passord</FormLabel>
-                            <FormControl>
-                              <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {passwordError ? (
-                        <p className="text-sm text-destructive">
-                          {passwordError}
-                        </p>
-                      ) : null}
-                      {passwordMessage ? (
-                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                          {passwordMessage}
-                        </p>
-                      ) : null}
-
-                      <div className="flex justify-end">
-                        <Button type="submit" disabled={passwordSubmitting}>
-                          {passwordSubmitting ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Oppdaterer ...
-                            </>
-                          ) : (
-                            "Endre passord"
+                        className="space-y-6"
+                      >
+                        <FormField
+                          control={passwordForm.control}
+                          name="currentPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nåværende passord</FormLabel>
+                              <FormControl>
+                                <Input type="password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
                           )}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </CardContent>
+                        />
+                        <FormField
+                          control={passwordForm.control}
+                          name="newPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nytt passord</FormLabel>
+                              <FormControl>
+                                <Input type="password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={passwordForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bekreft nytt passord</FormLabel>
+                              <FormControl>
+                                <Input type="password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {passwordError ? (
+                          <p className="text-sm text-destructive">
+                            {passwordError}
+                          </p>
+                        ) : null}
+                        {passwordMessage ? (
+                          <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                            {passwordMessage}
+                          </p>
+                        ) : null}
+
+                        <div className="flex justify-end">
+                          <Button type="submit" disabled={passwordSubmitting}>
+                            {passwordSubmitting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Oppdaterer ...
+                              </>
+                            ) : (
+                              "Endre passord"
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </CardContent>
                 </Card>
               </motion.div>
             </div>
@@ -490,52 +710,52 @@ export default function ProfilePage() {
             <motion.div className="space-y-6" variants={stagger}>
               <motion.div variants={fadeInUp}>
                 <Card>
-                <CardHeader>
-                  <CardTitle>Sesjon</CardTitle>
-                  <CardDescription>
-                    Avslutt innlogget økt på enheten.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                  <Button variant="outline" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logg ut
-                  </Button>
-                </CardContent>
+                  <CardHeader>
+                    <CardTitle>Sesjon</CardTitle>
+                    <CardDescription>
+                      Avslutt innlogget økt på enheten.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    <Button variant="outline" onClick={handleLogout}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logg ut
+                    </Button>
+                  </CardContent>
                 </Card>
               </motion.div>
 
               <motion.div variants={fadeInUp}>
                 <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle>Konto</CardTitle>
-                  <CardDescription>
-                    Slett kontoen permanent. Dette kan ikke angres.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {deleteError ? (
-                    <p className="text-sm text-destructive">{deleteError}</p>
-                  ) : null}
-                  <Button
-                    variant="destructive"
-                    onClick={handleDelete}
-                    disabled={deleteSubmitting}
-                    className="w-full"
-                  >
-                    {deleteSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Sletter ...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Slett konto
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
+                  <CardHeader>
+                    <CardTitle>Konto</CardTitle>
+                    <CardDescription>
+                      Slett kontoen permanent. Dette kan ikke angres.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {deleteError ? (
+                      <p className="text-sm text-destructive">{deleteError}</p>
+                    ) : null}
+                    <Button
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={deleteSubmitting}
+                      className="w-full"
+                    >
+                      {deleteSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Sletter ...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Slett konto
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
                 </Card>
               </motion.div>
             </motion.div>
@@ -545,3 +765,4 @@ export default function ProfilePage() {
     </>
   );
 }
+
