@@ -25,6 +25,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, LogOut, Trash2 } from "lucide-react";
+import { Header } from "@/components/shared/header";
 
 const phoneRegex = /^[0-9+\s()-]+$/;
 
@@ -272,234 +273,245 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container py-10 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Profil</h1>
-        <p className="text-muted-foreground mt-2">
-          Oppdater personlige detaljer, endre passord eller administrer kontoen
-          din.
-        </p>
-      </div>
+    <>
+      <Header />
+      <div className="min-h-[70vh] py-10">
+        <div className="mx-auto max-w-6xl px-4 lg:px-4 space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold">Profil</h1>
+            <p className="text-muted-foreground mt-2">
+              Oppdater personlige detaljer, endre passord eller administrer
+              kontoen din.
+            </p>
+          </div>
 
-      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-        <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personlig informasjon</CardTitle>
-              <CardDescription>
-                Oppdater navn, telefonnummer og adresse som brukes i
-                bestillinger.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...profileForm}>
-                <form
-                  onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={profileForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Navn</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ola Nordmann" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        <p className="text-xs text-muted-foreground">
-                          La feltet stå tomt for å skjule navnet ditt.
-                        </p>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={profileForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Telefonnummer</FormLabel>
-                        <FormControl>
-                          <Input inputMode="tel" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={profileForm.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Adresse</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {profileError ? (
-                    <p className="text-sm text-destructive">{profileError}</p>
-                  ) : null}
-                  {profileMessage ? (
-                    <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                      {profileMessage}
-                    </p>
-                  ) : null}
-
-                  <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      disabled={profileSubmitting || !profileDirty}
+          <div className="grid gap-6 lg:grid-cols-3 items-start">
+            {/* left column */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Personlig informasjon</CardTitle>
+                  <CardDescription>
+                    Oppdater navn, telefonnummer og adresse som brukes i
+                    bestillinger.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...profileForm}>
+                    <form
+                      onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
+                      className="space-y-6"
                     >
-                      {profileSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Oppdaterer ...
-                        </>
-                      ) : (
-                        "Lagre endringer"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                      <FormField
+                        control={profileForm.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Navn</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ola Nordmann" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            <p className="text-xs text-muted-foreground">
+                              La feltet stå tomt for å skjule navnet ditt.
+                            </p>
+                          </FormItem>
+                        )}
+                      />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Endre passord</CardTitle>
-              <CardDescription>
-                Oppgi nåværende passord for å sette et nytt.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...passwordForm}>
-                <form
-                  onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}
-                  className="space-y-6"
-                >
-                  <FormField
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nåværende passord</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nytt passord</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bekreft nytt passord</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={profileForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefonnummer</FormLabel>
+                            <FormControl>
+                              <Input inputMode="tel" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  {passwordError ? (
-                    <p className="text-sm text-destructive">{passwordError}</p>
+                      <FormField
+                        control={profileForm.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Adresse</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {profileError ? (
+                        <p className="text-sm text-destructive">
+                          {profileError}
+                        </p>
+                      ) : null}
+                      {profileMessage ? (
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                          {profileMessage}
+                        </p>
+                      ) : null}
+
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          disabled={profileSubmitting || !profileDirty}
+                        >
+                          {profileSubmitting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Oppdaterer ...
+                            </>
+                          ) : (
+                            "Lagre endringer"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Endre passord</CardTitle>
+                  <CardDescription>
+                    Oppgi nåværende passord for å sette et nytt.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...passwordForm}>
+                    <form
+                      onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}
+                      className="space-y-6"
+                    >
+                      <FormField
+                        control={passwordForm.control}
+                        name="currentPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nåværende passord</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="newPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nytt passord</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={passwordForm.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bekreft nytt passord</FormLabel>
+                            <FormControl>
+                              <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {passwordError ? (
+                        <p className="text-sm text-destructive">
+                          {passwordError}
+                        </p>
+                      ) : null}
+                      {passwordMessage ? (
+                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                          {passwordMessage}
+                        </p>
+                      ) : null}
+
+                      <div className="flex justify-end">
+                        <Button type="submit" disabled={passwordSubmitting}>
+                          {passwordSubmitting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Oppdaterer ...
+                            </>
+                          ) : (
+                            "Endre passord"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* right column */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sesjon</CardTitle>
+                  <CardDescription>
+                    Avslutt innlogget økt på enheten.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logg ut
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-destructive/50">
+                <CardHeader>
+                  <CardTitle>Konto</CardTitle>
+                  <CardDescription>
+                    Slett kontoen permanent. Dette kan ikke angres.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {deleteError ? (
+                    <p className="text-sm text-destructive">{deleteError}</p>
                   ) : null}
-                  {passwordMessage ? (
-                    <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                      {passwordMessage}
-                    </p>
-                  ) : null}
-
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={passwordSubmitting}>
-                      {passwordSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Oppdaterer ...
-                        </>
-                      ) : (
-                        "Endre passord"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sesjon</CardTitle>
-              <CardDescription>
-                Avslutt innlogget økt på enheten.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logg ut
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <CardTitle>Konto</CardTitle>
-              <CardDescription>
-                Slett kontoen permanent. Dette kan ikke angres.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {deleteError ? (
-                <p className="text-sm text-destructive">{deleteError}</p>
-              ) : null}
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleteSubmitting}
-                className="w-full"
-              >
-                {deleteSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Sletter ...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Slett konto
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={deleteSubmitting}
+                    className="w-full"
+                  >
+                    {deleteSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Sletter ...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Slett konto
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
