@@ -4,8 +4,6 @@ import { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { serializeUser } from "@/lib/serializers";
 
-type Params = { params: { id: string } };
-
 const userUpdateSchema = z
   .object({
     email: z.string().email().optional(),
@@ -40,10 +38,16 @@ const userUpdateSchema = z
     }
   });
 
-export async function GET(_: NextRequest, { params }: Params) {
+type RouteCtx = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(_: NextRequest, ctx: RouteCtx) {
   try {
+    const { id } = await ctx.params;
+
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!user) {
@@ -56,8 +60,10 @@ export async function GET(_: NextRequest, { params }: Params) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export async function PUT(request: NextRequest, ctx: RouteCtx) {
   try {
+    const { id } = await ctx.params;
+
     const raw = await request.json();
     const data = userUpdateSchema.parse(raw);
 
@@ -80,7 +86,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     let passwordHash: string | undefined;
     if (password) {
       const existing = await prisma.user.findUnique({
-        where: { id: params.id },
+        where: { id },
         select: { passwordHash: true },
       });
 
@@ -107,7 +113,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         email: email?.toLowerCase(),
         name: name === undefined ? undefined : name,
@@ -140,14 +146,15 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
       }
     }
-
     return handleError(error);
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(_: NextRequest, ctx: RouteCtx) {
   try {
-    await prisma.user.delete({ where: { id: params.id } });
+    const { id } = await ctx.params;
+
+    await prisma.user.delete({ where: { id } });
     return NextResponse.json({ success: true }, { status: 204 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -169,7 +176,6 @@ function handleError(error: unknown) {
       { status: 422 }
     );
   }
-
   console.error("Uventet API-feil:", error);
   return NextResponse.json({ error: "Intern tjenerfeil" }, { status: 500 });
 }
