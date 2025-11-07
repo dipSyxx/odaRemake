@@ -176,18 +176,21 @@ model Order {
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId String?
 
+  // from which cart the order was made
   cart   Cart?   @relation(fields: [cartId], references: [id], onDelete: SetNull)
   cartId String? @unique
 
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
 
+  // amounts
   currency      String  @default("NOK")
   subtotal      Decimal @db.Decimal(12, 2)
   discountTotal Decimal @default(0) @db.Decimal(12, 2)
   shippingTotal Decimal @default(0) @db.Decimal(12, 2)
   total         Decimal @db.Decimal(12, 2)
 
+  // addresses at the time of order (copy from the client side so that they do not change retrospectively)
   shippingAddress String?
   billingAddress  String?
 
@@ -205,6 +208,8 @@ model OrderItem {
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId String
 
+  // optionally keep the link to the product,
+  // but also keep the image so that the price/name doesn't "float"
   product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productId Int?
 
