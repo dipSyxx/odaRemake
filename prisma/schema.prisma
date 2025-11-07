@@ -25,16 +25,31 @@ enum PromotionDisplayStyle {
   UNKNOWN
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  phone     String?  @unique
-  address   String?
-  passwordHash  String?
-  carts     Cart[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  phone        String?  @unique
+  address      String?
+  passwordHash String?
+  carts        Cart[]
+  orders       Order[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Cart {
@@ -45,6 +60,7 @@ model Cart {
   currency    String     @default("NOK")
   totalAmount Decimal    @default(0) @db.Decimal(12, 2)
   items       CartItem[]
+  order       Order?
   submittedAt DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -92,6 +108,7 @@ model Product {
   discount                        Discount?
   promotions                      Promotion[]
   cartItems                       CartItem[]
+  orderItems                      OrderItem[]
   createdAt                       DateTime            @default(now())
   updatedAt                       DateTime            @updatedAt
 }
@@ -152,4 +169,53 @@ model Promotion {
   isPrimary         Boolean               @default(false)
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
+}
+
+model Order {
+  id     String  @id @default(cuid())
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+
+  cart   Cart?   @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  cartId String? @unique
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  currency      String  @default("NOK")
+  subtotal      Decimal @db.Decimal(12, 2)
+  discountTotal Decimal @default(0) @db.Decimal(12, 2)
+  shippingTotal Decimal @default(0) @db.Decimal(12, 2)
+  total         Decimal @db.Decimal(12, 2)
+
+  shippingAddress String?
+  billingAddress  String?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId Int?
+
+  productName String
+  unitPrice   Decimal @db.Decimal(10, 2)
+  quantity    Int     @default(1)
+  currency    String  @default("NOK")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
 }
