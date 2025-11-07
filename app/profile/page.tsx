@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
 import { useUserStore } from "@/hooks/use-user-store";
 import { Button } from "@/components/ui/button";
 import {
@@ -126,6 +127,19 @@ export default function ProfilePage() {
   });
 
   const profileDirty = profileForm.formState.isDirty;
+
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 16 },
+    show: { opacity: 1, y: 0 },
+  };
+
+  const stagger = {
+    hidden: { opacity: 1 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.12 },
+    },
+  };
 
   async function handleProfileSubmit(values: z.infer<typeof profileSchema>) {
     if (!user) return;
@@ -275,20 +289,29 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <div className="min-h-[70vh] py-10">
+      <motion.div
+        className="min-h-[70vh] py-10"
+        initial="hidden"
+        animate="show"
+        variants={stagger}
+      >
         <div className="mx-auto max-w-6xl px-4 lg:px-4 space-y-8">
-          <div>
+          <motion.div variants={fadeInUp}>
             <h1 className="text-3xl font-bold">Profil</h1>
             <p className="text-muted-foreground mt-2">
               Oppdater personlige detaljer, endre passord eller administrer
               kontoen din.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-6 lg:grid-cols-3 items-start">
+          <motion.div
+            className="grid gap-6 lg:grid-cols-3 items-start"
+            variants={stagger}
+          >
             {/* left column */}
             <div className="lg:col-span-2 space-y-6">
-              <Card>
+              <motion.div variants={fadeInUp}>
+                <Card>
                 <CardHeader>
                   <CardTitle>Personlig informasjon</CardTitle>
                   <CardDescription>
@@ -376,9 +399,11 @@ export default function ProfilePage() {
                     </form>
                   </Form>
                 </CardContent>
-              </Card>
+                </Card>
+              </motion.div>
 
-              <Card>
+              <motion.div variants={fadeInUp}>
+                <Card>
                 <CardHeader>
                   <CardTitle>Endre passord</CardTitle>
                   <CardDescription>
@@ -457,12 +482,14 @@ export default function ProfilePage() {
                     </form>
                   </Form>
                 </CardContent>
-              </Card>
+                </Card>
+              </motion.div>
             </div>
 
             {/* right column */}
-            <div className="space-y-6">
-              <Card>
+            <motion.div className="space-y-6" variants={stagger}>
+              <motion.div variants={fadeInUp}>
+                <Card>
                 <CardHeader>
                   <CardTitle>Sesjon</CardTitle>
                   <CardDescription>
@@ -475,9 +502,11 @@ export default function ProfilePage() {
                     Logg ut
                   </Button>
                 </CardContent>
-              </Card>
+                </Card>
+              </motion.div>
 
-              <Card className="border-destructive/50">
+              <motion.div variants={fadeInUp}>
+                <Card className="border-destructive/50">
                 <CardHeader>
                   <CardTitle>Konto</CardTitle>
                   <CardDescription>
@@ -507,11 +536,12 @@ export default function ProfilePage() {
                     )}
                   </Button>
                 </CardContent>
-              </Card>
-            </div>
-          </div>
+                </Card>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </>
   );
 }
