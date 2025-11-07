@@ -21,6 +21,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/shared/home";
 import { useTheme } from "@/lib/theme-provider";
+import { useUserStore } from "@/hooks/use-user-store";
 
 const loginSchema = z.object({
   email: z.string().email("Ugyldig e-post"),
@@ -32,6 +33,7 @@ export default function LoginPage() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isDarkMode = useTheme().theme === "dark";
+  const fetchMe = useUserStore((state) => state.fetchMe);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -48,6 +50,7 @@ export default function LoginPage() {
       setError("Feil e-post eller passord");
       return;
     }
+    await fetchMe();
     router.push("/");
   }
 
