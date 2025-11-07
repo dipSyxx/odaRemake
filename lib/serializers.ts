@@ -1,14 +1,24 @@
 import type {
+  Category,
   Cart,
   CartItem,
   Discount,
   Product,
   ProductClassifier,
   ProductImage,
+  ProductCategory,
   Promotion,
   User,
 } from "@prisma/client";
 import type { Decimal } from "@prisma/client/runtime/library";
+import type { Prisma } from "@prisma/client";
+
+export const productWithRelations = {
+  images: true,
+  classifiers: true,
+  discount: true,
+  promotions: true,
+} satisfies Prisma.ProductInclude;
 
 export function decimalToNumber(
   value: Decimal | number | string | null | undefined,
@@ -33,6 +43,17 @@ export type ProductWithRelations = Product & {
   classifiers: ProductClassifier[];
   discount: Discount | null;
   promotions: Promotion[];
+};
+export type CategoryWithRelations = Category & {
+  parent?: Category | null;
+  children?: Category[];
+  products?: (ProductCategory & {
+    product?: ProductWithRelations | null;
+  })[];
+  _count?: {
+    products?: number;
+    children?: number;
+  };
 };
 
 export function serializeProduct(product: ProductWithRelations) {
@@ -118,6 +139,56 @@ export function serializeProduct(product: ProductWithRelations) {
     updatedAt: product.updatedAt.toISOString(),
   };
 }
+
+export function serializeCategory(category: CategoryWithRelations) {
+  const productCountFromRelation =
+    category.products?.length ?? category._count?.products ?? null;
+  const childCountFromRelation =
+    category.children?.length ?? category._count?.children ?? null;
+
+  return {
+    id: category.id,
+    slug: category.slug,
+    name: category.name,
+    description: category.description,
+    imageUrl: category.imageUrl,
+    parentId: category.parentId,
+    parent: category.parent
+      ? {
+          id: category.parent.id,
+          name: category.parent.name,
+          slug: category.parent.slug,
+        }
+      : null,
+    productCount: productCountFromRelation,
+    childCount: childCountFromRelation,
+    children: category.children
+      ? category.children.map((child) => ({
+          id: child.id,
+          slug: child.slug,
+          name: child.name,
+          description: child.description,
+          imageUrl: child.imageUrl,
+          parentId: child.parentId,
+          createdAt: child.createdAt.toISOString(),
+          updatedAt: child.updatedAt.toISOString(),
+        }))
+      : undefined,
+    products: category.products
+      ? category.products.map((link) => ({
+          categoryId: link.categoryId,
+          productId: link.productId,
+          sortOrder: link.sortOrder,
+          product: link.product ? serializeProduct(link.product) : null,
+        }))
+      : undefined,
+    createdAt: category.createdAt.toISOString(),
+    updatedAt: category.updatedAt.toISOString(),
+  };
+}
+
+export type SerializedProduct = ReturnType<typeof serializeProduct>;
+export type SerializedCategory = ReturnType<typeof serializeCategory>;
 
 export type CartItemWithProduct = CartItem & {
   product?: ProductWithRelations | null;

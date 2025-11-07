@@ -2,45 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma-client";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
-import { serializeProduct } from "@/lib/serializers";
+import { productUpdateSchema } from "@/lib/validators/product";
 import {
-  buildProductUpdateData,
-  productInclude,
-  productUpdateSchema,
-} from "../helpers";
+  productWithRelations,
+  serializeProduct,
+} from "@/lib/serializers";
+import { buildProductUpdateData } from "../utils";
 
-type Params = {
-  params: { id: string };
+type RouteCtx = {
+  params: Promise<{ id: string }>;
 };
 
-function parseProductId(id: string) {
-  const value = Number(id);
-  if (!Number.isInteger(value)) {
-    throw new ZodError([
-      {
-        code: "invalid_type",
-        expected: "number",
-        received: "nan",
-        path: ["id"],
-        message: "Product id must be an integer.",
-      },
-    ]);
-  }
-  return value;
-}
-
-export async function GET(_: NextRequest, { params }: Params) {
+export async function GET(_: NextRequest, ctx: RouteCtx) {
   try {
-    const id = parseProductId(params.id);
-
+    const { id } = await ctx.params;
     const product = await prisma.product.findUnique({
       where: { id },
-      include: productInclude,
+      include: productWithRelations,
     });
 
     if (!product) {
       return NextResponse.json(
-        { error: `Product ${id} not found.` },
+        { error: "Fant ikke produkt." },
         { status: 404 },
       );
     }
@@ -51,25 +34,23 @@ export async function GET(_: NextRequest, { params }: Params) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: Params) {
+export async function PUT(request: NextRequest, ctx: RouteCtx) {
   try {
-    const id = parseProductId(params.id);
+    const { id } = await ctx.params;
     const raw = await request.json();
-    const parsed = productUpdateSchema.parse(raw);
+    const data = productUpdateSchema.parse(raw);
 
-    const updateData = buildProductUpdateData(parsed);
-
-    if (Object.keys(updateData).length === 0) {
+    if (Object.keys(data).length === 0) {
       return NextResponse.json(
-        { error: "No fields provided for update." },
+        { error: "Ingen felter ble sendt inn for oppdatering." },
         { status: 400 },
       );
     }
 
     const product = await prisma.product.update({
       where: { id },
-      data: updateData,
-      include: productInclude,
+      data: buildProductUpdateData(data),
+      include: productWithRelations,
     });
 
     return NextResponse.json({ data: serializeProduct(product) });
@@ -77,8 +58,17 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         return NextResponse.json(
-          { error: "Product not found." },
+          { error: "Fant ikke produkt." },
           { status: 404 },
+        );
+      }
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          {
+            error:
+              "En av relasjonene peker til en ugyldig ressurs. Kontroller kategori- og relasjons-IDer.",
+          },
+          { status: 400 },
         );
       }
     }
@@ -86,16 +76,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(_: NextRequest, ctx: RouteCtx) {
   try {
-    const id = parseProductId(params.id);
+    const { id } = await ctx.params;
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true }, { status: 204 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
         return NextResponse.json(
-          { error: "Product not found." },
+          { error: "Fant ikke produkt." },
           { status: 404 },
         );
       }
@@ -107,21 +97,10 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 function handleError(error: unknown) {
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { error: "ValidationError", issues: error.errors },
+      { error: "Valideringsfeil", issues: error.errors },
       { status: 422 },
     );
   }
-
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return NextResponse.json(
-      { error: error.message, code: error.code },
-      { status: 400 },
-    );
-  }
-
-  console.error("Unexpected API error:", error);
-  return NextResponse.json(
-    { error: "Internal Server Error" },
-    { status: 500 },
-  );
+  console.error("Produkt API-feil:", error);
+  return NextResponse.json({ error: "Intern tjenerfeil" }, { status: 500 });
 }

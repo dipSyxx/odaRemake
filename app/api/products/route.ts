@@ -1,48 +1,82 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma-client";
 import { Prisma } from "@prisma/client";
-import { ZodError, z } from "zod";
-import { serializeProduct } from "@/lib/serializers";
+import { ZodError } from "zod";
 import {
-  buildProductCreateData,
   productCreateSchema,
-  productInclude,
-} from "./helpers";
-
-const listQuerySchema = z.object({
-  search: z.string().optional(),
-  skip: z.coerce.number().int().min(0).optional(),
-  take: z.coerce.number().int().min(1).max(100).optional(),
-});
+  productListQuerySchema,
+} from "@/lib/validators/product";
+import {
+  productWithRelations,
+  serializeProduct,
+} from "@/lib/serializers";
+import {
+  PRODUCT_SORT_MAP,
+  buildProductCreateData,
+} from "./utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const parsedQuery = listQuerySchema.parse(
+    const query = productListQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
     );
 
-    const { search, skip = 0, take = 50 } = parsedQuery;
+    const {
+      skip = 0,
+      take = 24,
+      search,
+      categoryId,
+      isAvailable,
+      sort = "latest",
+      minPrice,
+      maxPrice,
+    } = query;
 
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
-            { fullName: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : undefined;
+    const where: Prisma.ProductWhereInput = {
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { fullName: { contains: search, mode: "insensitive" } },
+              { nameExtra: { contains: search, mode: "insensitive" } },
+              { brand: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+      ...(categoryId
+        ? {
+            categories: {
+              some: {
+                categoryId,
+              },
+            },
+          }
+        : {}),
+      ...(isAvailable !== undefined ? { isAvailable } : {}),
+      ...(minPrice !== undefined || maxPrice !== undefined
+        ? {
+            grossPrice: {
+              ...(minPrice !== undefined ? { gte: minPrice } : {}),
+              ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+            },
+          }
+        : {}),
+    };
 
-    const products = await prisma.product.findMany({
-      where,
-      skip,
-      take,
-      orderBy: { updatedAt: "desc" },
-      include: productInclude,
-    });
+    const [items, total] = await Promise.all([
+      prisma.product.findMany({
+        skip,
+        take,
+        where,
+        orderBy: PRODUCT_SORT_MAP[sort] ?? { createdAt: "desc" },
+        include: productWithRelations,
+      }),
+      prisma.product.count({ where }),
+    ]);
 
     return NextResponse.json({
-      data: products.map(serializeProduct),
-      meta: { count: products.length, skip, take },
+      data: items.map(serializeProduct),
+      meta: { count: total, skip, take },
     });
   } catch (error) {
     return handleError(error);
@@ -52,20 +86,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const raw = await request.json();
-    const parsed = productCreateSchema.parse(raw);
+    const data = productCreateSchema.parse(raw);
 
     const product = await prisma.product.create({
-      data: buildProductCreateData(parsed),
-      include: productInclude,
+      data: buildProductCreateData(data),
+      include: productWithRelations,
     });
 
     return NextResponse.json(
-      {
-        data: serializeProduct(product),
-      },
+      { data: serializeProduct(product) },
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          {
+            error:
+              "En av relasjonene peker til en ugyldig ressurs. Kontroller kategori- og relasjons-IDer.",
+          },
+          { status: 400 },
+        );
+      }
+    }
     return handleError(error);
   }
 }
@@ -73,30 +116,10 @@ export async function POST(request: NextRequest) {
 function handleError(error: unknown) {
   if (error instanceof ZodError) {
     return NextResponse.json(
-      {
-        error: "ValidationError",
-        issues: error.errors,
-      },
+      { error: "Valideringsfeil", issues: error.errors },
       { status: 422 },
     );
   }
-
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === "P2002") {
-      return NextResponse.json(
-        { error: "Product already exists for the provided identifier." },
-        { status: 409 },
-      );
-    }
-    return NextResponse.json(
-      { error: error.message, code: error.code },
-      { status: 400 },
-    );
-  }
-
-  console.error("Unexpected API error:", error);
-  return NextResponse.json(
-    { error: "Internal Server Error" },
-    { status: 500 },
-  );
+  console.error("Produkt API-feil:", error);
+  return NextResponse.json({ error: "Intern tjenerfeil" }, { status: 500 });
 }

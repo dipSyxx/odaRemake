@@ -34,7 +34,8 @@ import {
   DrawerFooter,
   DrawerClose,
 } from "@/components/ui/drawer";
-import { useState } from "react";
+import { cloneElement, useState } from "react";
+import { CategoriesPopover } from "./categories-popover";
 
 const NAV_ITEMS: { icon: LucideIcon; label: string; hasCaret?: boolean }[] = [
   { icon: Layers, label: "Kategorier", hasCaret: true },
@@ -147,21 +148,30 @@ export function Header() {
                 initial="hidden"
                 animate="visible"
               >
-                {NAV_ITEMS.map((item) => (
-                  <motion.button
-                    key={item.label}
-                    className="flex items-center gap-2 text-foreground text-sm hover:text-muted-foreground whitespace-nowrap"
-                    variants={fadeInUp}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.96 }}
-                  >
-                    <item.icon className="h-4 w-4" aria-hidden="true" />
-                    <span className="hidden sm:inline">{item.label}</span>
-                    {item.hasCaret ? (
-                      <ChevronDown className="h-4 w-4 hidden sm:inline" />
-                    ) : null}
-                  </motion.button>
-                ))}
+                {NAV_ITEMS.map((item) => {
+                  const button = (
+                    <motion.button
+                      className="flex items-center gap-2 text-foreground text-sm hover:text-muted-foreground whitespace-nowrap"
+                      variants={fadeInUp}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.96 }}
+                    >
+                      <item.icon className="h-4 w-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">{item.label}</span>
+                      {item.hasCaret ? (
+                        <ChevronDown className="h-4 w-4 hidden sm:inline" />
+                      ) : null}
+                    </motion.button>
+                  );
+
+                  if (item.label === "Kategorier") {
+                    return (
+                      <CategoriesPopover key={item.label} trigger={button} />
+                    );
+                  }
+
+                  return cloneElement(button, { key: item.label });
+                })}
               </motion.div>
 
               <motion.div
