@@ -3,6 +3,8 @@ import type {
   Cart,
   CartItem,
   Discount,
+  Order,
+  OrderItem,
   Product,
   ProductClassifier,
   ProductImage,
@@ -234,3 +236,50 @@ export function serializeUser(user: User) {
     updatedAt: user.updatedAt.toISOString(),
   }
 }
+
+export type OrderItemWithProduct = OrderItem & {
+  product?: ProductWithRelations | null
+}
+
+export type OrderWithRelations = Order & {
+  items: OrderItemWithProduct[]
+  user: User | null
+  cart: Cart | null
+}
+
+export function serializeOrder(order: OrderWithRelations) {
+  const items = order.items.map((item) => ({
+    id: item.id,
+    orderId: item.orderId,
+    productId: item.productId,
+    productName: item.productName,
+    unitPrice: decimalToNumber(item.unitPrice),
+    quantity: item.quantity,
+    currency: item.currency,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    product: item.product ? serializeProduct(item.product) : null,
+  }))
+
+  return {
+    id: order.id,
+    userId: order.userId,
+    cartId: order.cartId,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    currency: order.currency,
+    subtotal: decimalToNumber(order.subtotal),
+    discountTotal: decimalToNumber(order.discountTotal),
+    shippingTotal: decimalToNumber(order.shippingTotal),
+    total: decimalToNumber(order.total),
+    shippingAddress: order.shippingAddress,
+    billingAddress: order.billingAddress,
+    user: order.user ? serializeUser(order.user) : null,
+    cart: order.cart ? serializeCart(order.cart as CartWithRelations) : null,
+    items,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+  }
+}
+
+export type SerializedOrder = ReturnType<typeof serializeOrder>
