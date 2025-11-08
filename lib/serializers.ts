@@ -9,59 +9,57 @@ import type {
   ProductCategory,
   Promotion,
   User,
-} from "@prisma/client";
-import type { Decimal } from "@prisma/client/runtime/library";
-import type { Prisma } from "@prisma/client";
+} from '@prisma/client'
+import type { Decimal } from '@prisma/client/runtime/library'
+import type { Prisma } from '@prisma/client'
 
 export const productWithRelations = {
   images: true,
   classifiers: true,
   discount: true,
   promotions: true,
-} satisfies Prisma.ProductInclude;
+} satisfies Prisma.ProductInclude
 
-export function decimalToNumber(
-  value: Decimal | number | string | null | undefined,
-): number | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "number") return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+export function decimalToNumber(value: Decimal | number | string | null | undefined): number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
   }
   try {
-    return value.toNumber();
+    return value.toNumber()
   } catch {
-    const str = value.toString();
-    const parsed = Number(str);
-    return Number.isFinite(parsed) ? parsed : null;
+    const str = value.toString()
+    const parsed = Number(str)
+    return Number.isFinite(parsed) ? parsed : null
   }
 }
 
 export type ProductWithRelations = Product & {
-  images: ProductImage[];
-  classifiers: ProductClassifier[];
-  discount: Discount | null;
-  promotions: Promotion[];
-};
+  images: ProductImage[]
+  classifiers: ProductClassifier[]
+  discount: Discount | null
+  promotions: Promotion[]
+}
 export type CategoryWithRelations = Category & {
-  parent?: Category | null;
-  children?: Category[];
+  parent?: Category | null
+  children?: Category[]
   products?: (ProductCategory & {
-    product?: ProductWithRelations | null;
-  })[];
+    product?: ProductWithRelations | null
+  })[]
   _count?: {
-    products?: number;
-    children?: number;
-  };
-};
+    products?: number
+    children?: number
+  }
+}
 
 export function serializeProduct(product: ProductWithRelations) {
   return {
     id: product.id,
     fullName: product.fullName,
     brand: product.brand,
-    brandExternalId: product.brandExternalId,
+    brandId: product.brandId,
     name: product.name,
     nameExtra: product.nameExtra,
     frontUrl: product.frontUrl,
@@ -80,6 +78,7 @@ export function serializeProduct(product: ProductWithRelations) {
     metadata: product.metadata,
     isExemptFromThirdPartyMarketing: product.isExemptFromThirdPartyMarketing,
     bonusInfo: product.bonusInfo,
+    primaryCategoryId: product.primaryCategoryId,
     images: product.images.map((img) => ({
       id: img.id,
       variant: img.variant,
@@ -110,20 +109,13 @@ export function serializeProduct(product: ProductWithRelations) {
           id: product.discount.id,
           isDiscounted: product.discount.isDiscounted,
           source: product.discount.source,
-          undiscountedGrossPrice: decimalToNumber(
-            product.discount.undiscountedGrossPrice,
-          ),
-          undiscountedGrossUnitPrice: decimalToNumber(
-            product.discount.undiscountedGrossUnitPrice,
-          ),
+          undiscountedGrossPrice: decimalToNumber(product.discount.undiscountedGrossPrice),
+          undiscountedGrossUnitPrice: decimalToNumber(product.discount.undiscountedGrossUnitPrice),
           descriptionShort: product.discount.descriptionShort,
           maximumQuantity: product.discount.maximumQuantity,
           remainingQuantity: product.discount.remainingQuantity,
-          activeUntil: product.discount.activeUntil
-            ? product.discount.activeUntil.toISOString()
-            : null,
-          hasRelatedDiscountProducts:
-            product.discount.hasRelatedDiscountProducts,
+          activeUntil: product.discount.activeUntil ? product.discount.activeUntil.toISOString() : null,
+          hasRelatedDiscountProducts: product.discount.hasRelatedDiscountProducts,
           isSilent: product.discount.isSilent,
         }
       : null,
@@ -137,14 +129,12 @@ export function serializeProduct(product: ProductWithRelations) {
     })),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
-  };
+  }
 }
 
 export function serializeCategory(category: CategoryWithRelations) {
-  const productCountFromRelation =
-    category.products?.length ?? category._count?.products ?? null;
-  const childCountFromRelation =
-    category.children?.length ?? category._count?.children ?? null;
+  const productCountFromRelation = category.products?.length ?? category._count?.products ?? null
+  const childCountFromRelation = category.children?.length ?? category._count?.children ?? null
 
   return {
     id: category.id,
@@ -184,24 +174,25 @@ export function serializeCategory(category: CategoryWithRelations) {
       : undefined,
     createdAt: category.createdAt.toISOString(),
     updatedAt: category.updatedAt.toISOString(),
-  };
+  }
 }
 
-export type SerializedProduct = ReturnType<typeof serializeProduct>;
-export type SerializedCategory = ReturnType<typeof serializeCategory>;
+export type SerializedProduct = ReturnType<typeof serializeProduct>
+export type SerializedCategory = ReturnType<typeof serializeCategory>
 
 export type CartItemWithProduct = CartItem & {
-  product?: ProductWithRelations | null;
-};
+  product?: ProductWithRelations | null
+}
 
 export type CartWithRelations = Cart & {
-  items: CartItemWithProduct[];
-  user: User | null;
-};
+  items: CartItemWithProduct[]
+  user: User | null
+}
 
 export function serializeCart(cart: CartWithRelations) {
   const items = cart.items.map((item) => ({
     id: item.id,
+    cartId: item.cartId,
     productId: item.productId,
     quantity: item.quantity,
     unitPrice: decimalToNumber(item.unitPrice),
@@ -210,27 +201,26 @@ export function serializeCart(cart: CartWithRelations) {
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
     product: item.product ? serializeProduct(item.product) : null,
-  }));
+  }))
 
   const computedTotal = items.reduce((sum, item) => {
-    const unitPrice = item.unitPrice ?? 0;
-    return sum + unitPrice * item.quantity;
-  }, 0);
+    const unitPrice = item.unitPrice ?? 0
+    return sum + unitPrice * item.quantity
+  }, 0)
 
   return {
     id: cart.id,
     userId: cart.userId,
     status: cart.status,
     currency: cart.currency,
-    totalAmount:
-      decimalToNumber(cart.totalAmount) ?? Number(computedTotal.toFixed(2)),
+    totalAmount: decimalToNumber(cart.totalAmount) ?? Number(computedTotal.toFixed(2)),
     computedTotal,
     submittedAt: cart.submittedAt ? cart.submittedAt.toISOString() : null,
     createdAt: cart.createdAt.toISOString(),
     updatedAt: cart.updatedAt.toISOString(),
     user: cart.user ? serializeUser(cart.user) : null,
     items,
-  };
+  }
 }
 
 export function serializeUser(user: User) {
@@ -242,5 +232,5 @@ export function serializeUser(user: User) {
     address: user.address ?? null,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
-  };
+  }
 }
