@@ -234,6 +234,7 @@ export function serializeUser(user: User) {
     name: user.name,
     phone: user.phone ?? null,
     address: user.address ?? null,
+    isAdmin: (user as any).isAdmin ?? false,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   }

@@ -16,6 +16,7 @@ export const cartCreateSchema = z.object({
   userId: numberId.nullable().optional(),
   status: z.nativeEnum(CartStatus).optional(),
   currency: z.string().trim().length(3).optional(),
+  totalAmount: decimalInput.optional(),
 })
 
 export const cartUpdateSchema = z

@@ -27,19 +27,28 @@ export const authOptions: NextAuthOptions = {
         );
         if (!ok) return null;
 
-        return { id: user.id, email: user.email, name: user.name ?? undefined };
+        return { 
+          id: user.id, 
+          email: user.email, 
+          name: user.name ?? undefined,
+          isAdmin: user.isAdmin ?? false
+        };
       },
     }),
   ],
   pages: {},
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.id) token.sub = user.id;
+      if (user?.id) {
+        token.sub = user.id;
+        token.isAdmin = (user as any).isAdmin ?? false;
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
-        (session.user as { id?: string }).id = token.sub as string;
+        (session.user as { id?: string; isAdmin?: boolean }).id = token.sub as string;
+        (session.user as { id?: string; isAdmin?: boolean }).isAdmin = (token.isAdmin as boolean) ?? false;
       }
       return session;
     },
