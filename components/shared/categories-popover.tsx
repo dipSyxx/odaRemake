@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import { useMemo, useState } from "react";
-import type { ComponentType, ReactNode } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { motion } from "framer-motion";
+import { useMemo, useState } from 'react'
+import type { ComponentType, ReactNode } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
 import {
   Gift,
   Loader2,
@@ -12,36 +12,56 @@ import {
   Percent,
   RefreshCw,
   Sparkles,
-} from "lucide-react";
+  Apple,
+  Milk,
+  Beef,
+  Coffee,
+  type LucideIcon,
+} from 'lucide-react'
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { HighlightedProduct, useCategoryMenu } from "@/hooks/use-category-menu";
-import type { SerializedCategory } from "@/lib/serializers";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useCategoryMenu } from '@/hooks/use-category-menu'
+import type { SerializedCategory } from '@/lib/serializers'
 
 const SHORTCUTS = [
-  { label: "Nyheter", icon: Sparkles, href: "/nyheter" },
-  { label: "Tilbud", icon: Percent, href: "/tilbud" },
-  { label: "Alle produkter", icon: Package, href: "/produkter" },
-  { label: "Kjøp gavekort", icon: Gift, href: "/gaver" },
-];
+  { label: 'Nyheter', icon: Sparkles, href: '/nyheter' },
+  { label: 'Tilbud', icon: Percent, href: '/tilbud' },
+  { label: 'Alle produkter', icon: Package, href: '/produkter' },
+  { label: 'Kjøp gavekort', icon: Gift, href: '/gaver' },
+]
+
+// Fallback icon
+const DefaultIcon = Package
+
+// Map category names to icons (only for categories with products in seed)
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  'Frukt og grønt': Apple,
+  'Frokostblandinger og müsli': Coffee,
+  'Bakeri og konditori': Package,
+  'Meieri, ost og egg': Milk,
+  'Kylling og kjøtt': Beef,
+}
+
+function getCategoryIcon(categoryName: string): LucideIcon {
+  return CATEGORY_ICONS[categoryName] || DefaultIcon
+}
 
 type CategoriesPopoverProps = {
-  trigger: ReactNode;
-};
+  trigger: ReactNode
+}
 
 export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
-  const [open, setOpen] = useState(false);
-  const { categories, highlightedProducts, loading, error, hasFetched, refetch } =
-    useCategoryMenu(open);
+  const [open, setOpen] = useState(false)
+  const { categories, loading, error, hasFetched, refetch } = useCategoryMenu(open)
 
-  const featured = useMemo(
-    () => categories.slice(0, 4),
-    [categories],
-  );
+  // Filter only categories with products (productCount > 0)
+  const categoriesWithProducts = useMemo(() => categories.filter((cat) => (cat.productCount ?? 0) > 0), [categories])
+
+  const featured = useMemo(() => categoriesWithProducts.slice(0, 9), [categoriesWithProducts])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -54,9 +74,7 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
         <div className="grid md:grid-cols-[280px,1fr]">
           <aside className="p-5 border-r border-border/60 space-y-5">
             <section>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                Snarveier
-              </p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Snarveier</p>
               <div className="grid gap-2">
                 {SHORTCUTS.map((shortcut) => (
                   <ShortcutButton key={shortcut.label} {...shortcut} />
@@ -68,16 +86,19 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                 Utvalgte kategorier
               </p>
-              <div className="grid gap-3">
-                {featured.map((category) => (
-                  <FeaturedCategoryCard key={category.id} category={category} />
-                ))}
-                {featured.length === 0 && !loading ? (
-                  <p className="text-sm text-muted-foreground">
-                    Ingen kategorier er tilgjengelige ennå.
-                  </p>
-                ) : null}
-              </div>
+              {loading && featured.length === 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {featured.map((category) => (
+                    <FeaturedCategoryCard key={category.id} category={category} />
+                  ))}
+                </div>
+              )}
             </section>
           </aside>
 
@@ -86,9 +107,7 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
               <div>
                 <p className="text-sm font-semibold">Utforsk kategorier</p>
                 <p className="text-xs text-muted-foreground">
-                  {loading
-                    ? "Laster innhold..."
-                    : `${categories.length} kategorier tilgjengelige`}
+                  {loading ? 'Laster innhold...' : `${categoriesWithProducts.length} kategorier tilgjengelige`}
                 </p>
               </div>
               {!hasFetched || loading ? (
@@ -102,225 +121,116 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
             {error ? (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive space-y-2">
                 <p>{error}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={refetch}
-                >
+                <Button variant="outline" size="sm" className="gap-2" onClick={refetch}>
                   <RefreshCw className="h-4 w-4" />
                   Prøv igjen
                 </Button>
               </div>
             ) : null}
 
-            {loading && !categories.length ? (
-              <div className="grid gap-3">
-                {Array.from({ length: 6 }).map((_, index) => (
+            {loading && !categoriesWithProducts.length ? (
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: 10 }).map((_, index) => (
                   <Skeleton key={index} className="h-16 rounded-lg" />
                 ))}
               </div>
             ) : (
-              <>
-                <CategoryList categories={categories} />
-                {highlightedProducts.length > 0 ? (
-                  <section className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">Populære produkter</p>
-                      <Badge variant="outline">
-                        {highlightedProducts.length} produkter
-                      </Badge>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {highlightedProducts.slice(0, 6).map((product) => (
-                        <ProductPreviewCard key={product.id} product={product} />
-                      ))}
-                    </div>
-                  </section>
-                ) : null}
-              </>
+              <CategoryList categories={categoriesWithProducts} />
             )}
           </div>
         </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 type ShortcutProps = {
-  label: string;
-  icon: ComponentType<{ className?: string }>;
-  href: string;
-};
+  label: string
+  icon: ComponentType<{ className?: string }>
+  href: string
+}
 
 function ShortcutButton({ label, icon: Icon, href }: ShortcutProps) {
   return (
-    <Button
-      variant="secondary"
-      size="sm"
-      className="w-full justify-start gap-2 rounded-lg"
-      asChild
-    >
+    <Button variant="secondary" size="sm" className="w-full justify-start gap-2 rounded-lg" asChild>
       <Link href={href}>
         <Icon className="h-4 w-4 text-foreground/80" />
         {label}
       </Link>
     </Button>
-  );
+  )
 }
 
 function FeaturedCategoryCard({ category }: { category: SerializedCategory }) {
   const fallbackImage =
     category.imageUrl ??
-    category.products?.find((link) => link.product?.images?.length)
-      ?.product?.images?.[0]?.large?.url;
+    category.products?.find((link) => link.product?.images?.length)?.product?.images?.[0]?.large?.url
 
   return (
     <Link
       href={`/kategorier/${category.slug}`}
-      className="flex items-center gap-3 rounded-xl border border-border/60 bg-secondary/30 p-3 transition hover:border-border hover:bg-secondary/60"
+      className="group relative h-20 w-full overflow-hidden rounded-lg border border-border/60 transition hover:border-border hover:shadow-md"
     >
-      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-        {fallbackImage ? (
-          <Image
-            src={fallbackImage}
-            alt={category.name}
-            fill
-            className="object-cover"
-            sizes="48px"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-            {category.name.slice(0, 2).toUpperCase()}
-          </div>
-        )}
-      </div>
-      <div>
-        <p className="text-sm font-semibold">{category.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {category.productCount ?? 0} produkter
-        </p>
+      {fallbackImage ? (
+        <Image
+          src={fallbackImage}
+          alt={category.name}
+          fill
+          className="object-cover transition-transform group-hover:scale-105"
+          sizes="(max-width: 768px) 33vw, 80px"
+        />
+      ) : (
+        <div className="h-full w-full bg-gradient-to-br from-secondary to-secondary/50" />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-2">
+        <p className="text-xs font-semibold text-white line-clamp-2 drop-shadow-sm">{category.name}</p>
       </div>
     </Link>
-  );
+  )
 }
 
 function CategoryList({ categories }: { categories: SerializedCategory[] }) {
   if (!categories.length) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Ingen kategorier er tilgjengelige for øyeblikket.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">Ingen kategorier er tilgjengelige for øyeblikket.</p>
   }
 
+  // Split categories into two columns
+  const midPoint = Math.ceil(categories.length / 2)
+  const leftColumn = categories.slice(0, midPoint)
+  const rightColumn = categories.slice(midPoint)
+
   return (
-    <div className="grid gap-2">
-      {categories.map((category) => (
-        <Link
-          key={category.id}
-          href={`/kategorier/${category.slug}`}
-          className="group flex items-center justify-between gap-3 rounded-lg border border-transparent p-3 transition hover:border-border hover:bg-secondary/40"
-        >
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-              <CategoryAvatar category={category} />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{category.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {category.description ?? "Utforsk produkter"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-foreground/80">
-              {category.productCount ?? 0}
-            </span>
-            <motion.span
-              className="text-foreground/60"
-              whileHover={{ x: 2 }}
-            >
-              →
-            </motion.span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-function CategoryAvatar({ category }: { category: SerializedCategory }) {
-  const productImage =
-    category.products?.find((link) => link.product?.images?.length)
-      ?.product?.images?.[0];
-
-  const url =
-    category.imageUrl ??
-    productImage?.thumbnail?.url ??
-    productImage?.large?.url;
-
-  if (!url) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-muted-foreground">
-        {category.name.slice(0, 2).toUpperCase()}
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+      <div className="space-y-2">
+        {leftColumn.map((category) => (
+          <CategoryItem key={category.id} category={category} />
+        ))}
       </div>
-    );
-  }
-
-  return (
-    <Image
-      src={url}
-      alt={category.name}
-      fill
-      className="object-cover"
-      sizes="40px"
-    />
-  );
+      <div className="space-y-2">
+        {rightColumn.map((category) => (
+          <CategoryItem key={category.id} category={category} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
-function ProductPreviewCard({ product }: { product: HighlightedProduct }) {
-  const image =
-    product.images?.[0]?.thumbnail?.url ?? product.images?.[0]?.large?.url;
+function CategoryItem({ category }: { category: SerializedCategory }) {
+  const Icon = getCategoryIcon(category.name)
 
   return (
     <Link
-      href={product.absoluteUrl || `/produkt/${product.id}`}
-      className="group flex gap-3 rounded-xl border border-border/60 p-3 transition hover:border-border hover:bg-secondary/40"
+      href={`/kategorier/${category.slug}`}
+      className="group flex items-center gap-3 rounded-lg p-2 transition hover:bg-secondary/40"
     >
-      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-        {image ? (
-          <Image
-            src={image}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="64px"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-            {product.name.slice(0, 2).toUpperCase()}
-          </div>
-        )}
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary/50 text-foreground/70 group-hover:bg-secondary group-hover:text-foreground">
+        <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{product.name}</p>
-        <p className="truncate text-xs text-muted-foreground">
-          {product.categoryName}
-        </p>
-        <p className="text-sm font-medium text-foreground">
-          {formatCurrency(product.grossPrice, product.currency)}
-        </p>
+        <p className="truncate text-sm font-medium text-foreground">{category.name}</p>
       </div>
+      <span className="text-xs text-muted-foreground">{category.productCount ?? 0}</span>
     </Link>
-  );
-}
-
-function formatCurrency(value: number | null | undefined, currency = "NOK") {
-  if (value === null || value === undefined) return "Ukjent pris";
-  return new Intl.NumberFormat("no-NO", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(value);
+  )
 }
