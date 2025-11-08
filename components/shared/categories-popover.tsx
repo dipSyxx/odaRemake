@@ -16,6 +16,18 @@ import {
   Milk,
   Beef,
   Coffee,
+  Fish,
+  ShoppingBag,
+  Cookie,
+  Baby,
+  Pill,
+  Home,
+  Cat,
+  UtensilsCrossed,
+  Candy,
+  Dumbbell,
+  Flower2,
+  Cigarette,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -34,20 +46,46 @@ const SHORTCUTS = [
   { label: 'Kjøp gavekort', icon: Gift, href: '/gaver' },
 ]
 
-// Fallback icon
+// Fallback icon for categories without specific icon mapping
 const DefaultIcon = Package
 
-// Map category names to icons (only for categories with products in seed)
+// Map all category names from seed.ts to icons
+// Note: Only categories with products (productCount > 0) will be displayed in the UI
+// Categories are filtered by productCount > 0 before rendering
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   'Frukt og grønt': Apple,
   'Frokostblandinger og müsli': Coffee,
+  Plantebasert: Milk,
+  'Fisk og sjømat': Fish,
+  Pålegg: ShoppingBag,
+  Drikke: Coffee,
+  'Iskrem, dessert og kjeks': Cookie,
+  'Baby og barn': Baby,
+  'Legemidler og helsekost': Pill,
+  'Hus og hjem': Home,
+  Dyr: Cat,
   'Bakeri og konditori': Package,
   'Meieri, ost og egg': Milk,
   'Kylling og kjøtt': Beef,
-}
+  Restauranter: UtensilsCrossed,
+  'Middager og tilbehør': UtensilsCrossed,
+  Bakeingredienser: Cookie,
+  'Sjokolade, snacks og godteri': Candy,
+  Trening: Dumbbell,
+  'Hygiene og skjønnhet': ShoppingBag,
+  'Blomster og planter': Flower2,
+  'Snus og tobakk': Cigarette,
+} as const
 
+/**
+ * Get icon for a category.
+ * Categories without products are filtered out before this function is called,
+ * but all categories from seed.ts have icon mappings defined here.
+ */
 function getCategoryIcon(categoryName: string): LucideIcon {
-  return CATEGORY_ICONS[categoryName] || DefaultIcon
+  // Since we filter categories by productCount > 0, only categories with products
+  // will reach this function. But we still use DefaultIcon as fallback for safety.
+  return CATEGORY_ICONS[categoryName] ?? DefaultIcon
 }
 
 type CategoriesPopoverProps = {
@@ -69,9 +107,9 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
       <PopoverContent
         align="start"
         sideOffset={16}
-        className="w-[min(95vw,1100px)] p-0 border-border/80 bg-background/95 backdrop-blur-lg shadow-2xl"
+        className="w-[min(95vw,1100px)] h-[calc(100vh-150px)] max-h-[calc(100vh-150px)] p-0 border-border/80 bg-background/95 backdrop-blur-lg shadow-2xl flex flex-col overflow-hidden"
       >
-        <div className="grid md:grid-cols-[280px,1fr]">
+        <div className="flex-1 grid md:grid-cols-[280px,1fr] overflow-y-auto min-h-0">
           <aside className="p-5 border-r border-border/60 space-y-5">
             <section>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Snarveier</p>
@@ -102,7 +140,7 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
             </section>
           </aside>
 
-          <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+          <div className="p-5 space-y-5">
             <header className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">Utforsk kategorier</p>
