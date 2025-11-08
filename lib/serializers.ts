@@ -135,8 +135,10 @@ export function serializeProduct(product: ProductWithRelations) {
 }
 
 export function serializeCategory(category: CategoryWithRelations) {
-  const productCountFromRelation = category.products?.length ?? category._count?.products ?? null
-  const childCountFromRelation = category.children?.length ?? category._count?.children ?? null
+  // Use _count.products first (total count from database), fallback to products.length if _count is not available
+  const productCountFromRelation = category._count?.products ?? category.products?.length ?? null
+  // Use _count.children first (total count from database), fallback to children.length if _count is not available
+  const childCountFromRelation = category._count?.children ?? category.children?.length ?? null
 
   return {
     id: category.id,
