@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, LogOut, Trash2 } from 'lucide-react'
+import { Loader2, LogOut, ShieldCheck, Trash2 } from 'lucide-react'
 import { Header } from '@/components/shared/header'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 
@@ -613,6 +613,23 @@ export default function ProfilePage() {
 
           {/* right column */}
           <motion.div className="space-y-6" variants={stagger}>
+            {user?.isAdmin ? (
+              <motion.div variants={fadeInUp}>
+                <Card className="border-emerald-500/40">
+                  <CardHeader>
+                    <CardTitle>Adminpanel</CardTitle>
+                    <CardDescription>Administrer produkter, kategorier og brukere fra kontrollpanelet.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Button className="w-full gap-2" onClick={() => router.push('/admin')}>
+                      <ShieldCheck className="h-4 w-4" />
+                      Gå til admin
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : null}
+
             <motion.div variants={fadeInUp}>
               <Card>
                 <CardHeader>

@@ -6,6 +6,7 @@ type User = {
   id: string;
   email: string;
   name?: string | null;
+  isAdmin?: boolean;
   phone?: string | null;
   address?: string | null;
   createdAt?: string;
