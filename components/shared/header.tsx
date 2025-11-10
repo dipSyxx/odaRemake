@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { motion } from 'framer-motion'
-import type { LucideIcon } from 'lucide-react'
+import { motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   Building2,
@@ -15,22 +15,44 @@ import {
   Sun,
   Tag,
   X,
-} from 'lucide-react'
-import { useTheme } from '../../lib/theme-provider'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { fadeIn, fadeInDown, fadeInUp, scaleIn, staggerChildren } from '../../lib/motion-presets'
-import Link from 'next/link'
-import { useUserStore } from '@/hooks/use-user-store'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { cloneElement, useMemo, useState } from 'react'
-import Image from 'next/image'
-import { CategoriesPopover } from './categories-popover'
-import { useCategoryMenu } from '@/hooks/use-category-menu'
-import { Skeleton } from '../ui/skeleton'
-import { Separator } from '../ui/separator'
-import { Badge } from '../ui/badge'
+  Minus,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useTheme } from "../../lib/theme-provider";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import {
+  fadeIn,
+  fadeInDown,
+  fadeInUp,
+  scaleIn,
+  staggerChildren,
+} from "../../lib/motion-presets";
+import Link from "next/link";
+import { useUserStore } from "@/hooks/use-user-store";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+  DrawerClose,
+} from "@/components/ui/drawer";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { cloneElement, useMemo, useState } from "react";
+import Image from "next/image";
+import { CategoriesPopover } from "./categories-popover";
+import { useCategoryMenu } from "@/hooks/use-category-menu";
+import { Skeleton } from "../ui/skeleton";
+import { Separator } from "../ui/separator";
+import { Badge } from "../ui/badge";
+import { useCartActions } from "@/hooks/use-cart-actions";
 import {
   Loader2,
   RefreshCw,
@@ -54,61 +76,86 @@ import {
   Dumbbell,
   Flower2,
   Cigarette,
-} from 'lucide-react'
+} from "lucide-react";
 
 const SHORTCUTS = [
-  { label: 'Nyheter', icon: Sparkles, href: '/nyheter' },
-  { label: 'Tilbud', icon: Percent, href: '/tilbud' },
-  { label: 'Alle produkter', icon: Package, href: '/produkter' },
-  { label: 'Kjøp gavekort', icon: Gift, href: '/gaver' },
-]
+  { label: "Nyheter", icon: Sparkles, href: "/nyheter" },
+  { label: "Tilbud", icon: Percent, href: "/tilbud" },
+  { label: "Alle produkter", icon: Package, href: "/produkter" },
+  { label: "Kjøp gavekort", icon: Gift, href: "/gaver" },
+];
 
-const DefaultIcon = Package
+const DefaultIcon = Package;
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  'Frukt og grønt': Apple,
-  'Frokostblandinger og müsli': Coffee,
+  "Frukt og grønt": Apple,
+  "Frokostblandinger og müsli": Coffee,
   Plantebasert: Milk,
-  'Fisk og sjømat': Fish,
+  "Fisk og sjømat": Fish,
   Pålegg: ShoppingBag,
   Drikke: Coffee,
-  'Iskrem, dessert og kjeks': Cookie,
-  'Baby og barn': Baby,
-  'Legemidler og helsekost': Pill,
-  'Hus og hjem': Home,
+  "Iskrem, dessert og kjeks": Cookie,
+  "Baby og barn": Baby,
+  "Legemidler og helsekost": Pill,
+  "Hus og hjem": Home,
   Dyr: Cat,
-  'Bakeri og konditori': Package,
-  'Meieri, ost og egg': Milk,
-  'Kylling og kjøtt': Beef,
+  "Bakeri og konditori": Package,
+  "Meieri, ost og egg": Milk,
+  "Kylling og kjøtt": Beef,
   Restauranter: UtensilsCrossed,
-  'Middager og tilbehør': UtensilsCrossed,
+  "Middager og tilbehør": UtensilsCrossed,
   Bakeingredienser: Cookie,
-  'Sjokolade, snacks og godteri': Candy,
+  "Sjokolade, snacks og godteri": Candy,
   Trening: Dumbbell,
-  'Hygiene og skjønnhet': ShoppingBag,
-  'Blomster og planter': Flower2,
-  'Snus og tobakk': Cigarette,
-} as const
+  "Hygiene og skjønnhet": ShoppingBag,
+  "Blomster og planter": Flower2,
+  "Snus og tobakk": Cigarette,
+} as const;
 
 function getCategoryIcon(categoryName: string): LucideIcon {
-  return CATEGORY_ICONS[categoryName] ?? DefaultIcon
+  return CATEGORY_ICONS[categoryName] ?? DefaultIcon;
+}
+
+function formatCurrency(value: number | null | undefined, currency = "NOK") {
+  if (value === null || value === undefined) return "kr 0,00";
+  return new Intl.NumberFormat("no-NO", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 const NAV_ITEMS: { icon: LucideIcon; label: string; hasCaret?: boolean }[] = [
-  { icon: Layers, label: 'Kategorier', hasCaret: true },
-  { icon: Tag, label: 'Tilbud' },
-  { icon: BookOpen, label: 'Kokeboka' },
-  { icon: Building2, label: 'For bedrifter' },
-]
+  { icon: Layers, label: "Kategorier", hasCaret: true },
+  { icon: Tag, label: "Tilbud" },
+  { icon: BookOpen, label: "Kokeboka" },
+  { icon: Building2, label: "For bedrifter" },
+];
 
-function MobileMenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { categories, loading, error, hasFetched, refetch } = useCategoryMenu(open)
-  const categoriesWithProducts = useMemo(() => categories.filter((cat) => (cat.productCount ?? 0) > 0), [categories])
-  const featured = useMemo(() => categoriesWithProducts.slice(0, 9), [categoriesWithProducts])
+function MobileMenuSheet({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { categories, loading, error, hasFetched, refetch } =
+    useCategoryMenu(open);
+  const categoriesWithProducts = useMemo(
+    () => categories.filter((cat) => (cat.productCount ?? 0) > 0),
+    [categories]
+  );
+  const featured = useMemo(
+    () => categoriesWithProducts.slice(0, 9),
+    [categoriesWithProducts]
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full sm:w-[400px] p-0 overflow-hidden flex flex-col">
+      <SheetContent
+        side="left"
+        className="w-full sm:w-[400px] p-0 overflow-hidden flex flex-col"
+      >
         <SheetHeader className="p-4 border-b border-border/60 shrink-0">
           <SheetTitle className="text-lg font-semibold">Snarveier</SheetTitle>
         </SheetHeader>
@@ -181,11 +228,16 @@ function MobileMenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
                 <div>
                   <p className="text-sm font-semibold">Utforsk kategorier</p>
                   <p className="text-xs text-muted-foreground">
-                    {loading ? 'Laster innhold...' : `${categoriesWithProducts.length} kategorier tilgjengelige`}
+                    {loading
+                      ? "Laster innhold..."
+                      : `${categoriesWithProducts.length} kategorier tilgjengelige`}
                   </p>
                 </div>
                 {!hasFetched || loading ? (
-                  <Badge variant="secondary" className="flex items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                  >
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Laster
                   </Badge>
@@ -194,7 +246,12 @@ function MobileMenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
               {error ? (
                 <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive space-y-2">
                   <p>{error}</p>
-                  <Button variant="outline" size="sm" className="gap-2" onClick={refetch}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={refetch}
+                  >
                     <RefreshCw className="h-4 w-4" />
                     Prøv igjen
                   </Button>
@@ -209,7 +266,7 @@ function MobileMenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
               ) : (
                 <div className="space-y-2">
                   {categoriesWithProducts.map((category) => {
-                    const Icon = getCategoryIcon(category.name)
+                    const Icon = getCategoryIcon(category.name);
                     return (
                       <Link
                         key={category.id}
@@ -221,11 +278,15 @@ function MobileMenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
                           <Icon className="h-3.5 w-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">{category.name}</p>
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {category.name}
+                          </p>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">{category.productCount ?? 0}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {category.productCount ?? 0}
+                        </span>
                       </Link>
-                    )
+                    );
                   })}
                 </div>
               )}
@@ -234,15 +295,32 @@ function MobileMenuSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 export function Header() {
-  const { theme, setTheme } = useTheme()
-  const { cart, user } = useUserStore()
-  const [cartOpen, setCartOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const greetingName = user?.name?.trim()?.split(/\s+/)[0] ?? user?.email?.split('@')[0] ?? null
+  const { theme, setTheme } = useTheme();
+  const { cart, user } = useUserStore();
+  const { updateItemQuantity, removeItem, action } = useCartActions();
+  const [cartOpen, setCartOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const greetingName =
+    user?.name?.trim()?.split(/\s+/)[0] ?? user?.email?.split("@")[0] ?? null;
+
+  const isUpdatingItem = (itemId: string) =>
+    action === `update-${itemId}` || action === `remove-${itemId}`;
+
+  const handleDecrease = (item: NonNullable<typeof cart>["items"][number]) => {
+    if (item.quantity <= 1) {
+      removeItem(item.id);
+      return;
+    }
+    updateItemQuantity(item.id, item.quantity - 1);
+  };
+
+  const handleIncrease = (item: NonNullable<typeof cart>["items"][number]) => {
+    updateItemQuantity(item.id, item.quantity + 1);
+  };
 
   return (
     <>
@@ -250,7 +328,7 @@ export function Header() {
         className="sticky top-0 z-50 border-b border-border"
         initial={{ opacity: 0, y: -24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
       >
         <div className="w-full">
           {/* Mobile Header */}
@@ -306,7 +384,11 @@ export function Header() {
                 <Button variant="outline" size="sm" className="flex-1" asChild>
                   <Link href="/login">Logg inn</Link>
                 </Button>
-                <Button size="sm" className="flex-1 bg-[#ff9500] hover:bg-[#e68600] text-black" asChild>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-[#ff9500] hover:bg-[#e68600] text-black"
+                  asChild
+                >
                   <Link href="/register">Opprett konto</Link>
                 </Button>
               </div>
@@ -331,30 +413,39 @@ export function Header() {
                 className="flex items-center gap-4 lg:gap-8 flex-1 lg:flex-initial"
                 variants={staggerChildren}
               >
-                <motion.h1 className="text-2xl lg:text-3xl font-bold text-[#ff9500] shrink-0" variants={fadeInUp}>
+                <motion.h1
+                  className="text-2xl lg:text-3xl font-bold text-[#ff9500] shrink-0"
+                  variants={fadeInUp}
+                >
                   <Link href="/">oda</Link>
                 </motion.h1>
 
-                <motion.div className="relative hidden md:block md:w-[300px] lg:w-[450px]" variants={fadeInUp}>
+                <motion.div
+                  className="relative hidden md:block md:w-[300px] lg:w-[450px]"
+                  variants={fadeInUp}
+                >
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
-                    placeholder={'S\u00f8k'}
+                    placeholder={"S\u00f8k"}
                     className="w-full pl-10 bg-secondary border-border text-foreground placeholder:text-muted-foreground rounded-full"
                   />
                 </motion.div>
               </motion.div>
 
-              <motion.div className="flex items-center gap-2 lg:gap-3" variants={staggerChildren}>
+              <motion.div
+                className="flex items-center gap-2 lg:gap-3"
+                variants={staggerChildren}
+              >
                 <motion.button
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="p-2 rounded-full hover:bg-secondary transition-colors"
                   aria-label="Toggle theme"
                   variants={scaleIn}
                   whileHover={{ rotate: 8 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                  {theme === 'dark' ? (
+                  {theme === "dark" ? (
                     <Sun className="h-5 w-5 text-foreground" />
                   ) : (
                     <Moon className="h-5 w-5 text-foreground" />
@@ -369,7 +460,9 @@ export function Header() {
                   >
                     <ShoppingCart className="h-4 w-4" />
                     <span className="text-sm hidden sm:inline">
-                      {cart?.totalAmount ? `kr ${cart.totalAmount.toFixed(2)}` : 'kr 0,00'}
+                      {cart?.totalAmount
+                        ? `kr ${cart.totalAmount.toFixed(2)}`
+                        : "kr 0,00"}
                     </span>
                   </Button>
                 </motion.div>
@@ -383,7 +476,7 @@ export function Header() {
             variants={fadeInDown}
             initial="hidden"
             animate="visible"
-            transition={{ duration: 0.35, delay: 0.2, ease: 'easeOut' }}
+            transition={{ duration: 0.35, delay: 0.2, ease: "easeOut" }}
           >
             <div className="container flex justify-between">
               <motion.div
@@ -402,15 +495,19 @@ export function Header() {
                     >
                       <item.icon className="h-4 w-4" aria-hidden="true" />
                       <span className="hidden sm:inline">{item.label}</span>
-                      {item.hasCaret ? <ChevronDown className="h-4 w-4 hidden sm:inline" /> : null}
+                      {item.hasCaret ? (
+                        <ChevronDown className="h-4 w-4 hidden sm:inline" />
+                      ) : null}
                     </motion.button>
-                  )
+                  );
 
-                  if (item.label === 'Kategorier') {
-                    return <CategoriesPopover key={item.label} trigger={button} />
+                  if (item.label === "Kategorier") {
+                    return (
+                      <CategoriesPopover key={item.label} trigger={button} />
+                    );
                   }
 
-                  return cloneElement(button, { key: item.label })
+                  return cloneElement(button, { key: item.label });
                 })}
               </motion.div>
 
@@ -426,13 +523,16 @@ export function Header() {
                       className="text-foreground text-sm font-medium"
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeOut' }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
                     >
-                      Hei{greetingName ? ` ${greetingName}!` : '!'}
+                      Hei{greetingName ? ` ${greetingName}!` : "!"}
                     </motion.span>
                     <motion.div variants={fadeInUp}>
                       <Link href="/profile" aria-label="Gå til profilen">
-                        <Button variant="outline" className="flex items-center gap-2 text-sm">
+                        <Button
+                          variant="outline"
+                          className="flex items-center gap-2 text-sm"
+                        >
                           <CircleUserRound className="h-4 w-4" />
                           <span className="hidden sm:inline">Profil</span>
                         </Button>
@@ -452,7 +552,9 @@ export function Header() {
                     <motion.div variants={fadeInUp}>
                       <Link href="/register">
                         <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black font-medium rounded-md text-sm px-3 py-0 h-7">
-                          <span className="hidden sm:inline">Opprett konto</span>
+                          <span className="hidden sm:inline">
+                            Opprett konto
+                          </span>
                           <span className="sm:hidden">Opprett</span>
                         </Button>
                       </Link>
@@ -476,27 +578,108 @@ export function Header() {
           </DrawerHeader>
           <div className="p-4 space-y-4 overflow-y-auto">
             {cart && cart.items.length > 0 ? (
-              cart.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <div className="font-medium">{item.product?.name ?? `Produkt #${item.productId}`}</div>
-                    <div className="text-muted-foreground">
-                      {item.quantity} x {item.unitPrice ?? 0} {item.currency}
+              cart.items.map((item) => {
+                const image =
+                  item.product?.images?.[0]?.thumbnail?.url ??
+                  item.product?.images?.[0]?.large?.url ??
+                  null;
+                const unitPrice = item.unitPrice ?? 0;
+                const lineTotal = unitPrice * item.quantity;
+                const disabled = isUpdatingItem(item.id);
+
+                return (
+                  <div
+                    key={item.id}
+                    className="flex gap-3 rounded-lg border border-border/60 p-3"
+                  >
+                    <div className="relative h-16 w-16 overflow-hidden rounded-md bg-secondary/30">
+                      {image ? (
+                        <Image
+                          src={image}
+                          alt={item.product?.name ?? "Produkt"}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                          Ingen bilde
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <p className="text-sm font-medium ">
+                          {item.product?.name ?? `Produkt #${item.productId}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(unitPrice, item.currency)} ·{" "}
+                          {item.quantity} stk
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleDecrease(item)}
+                          disabled={disabled}
+                          aria-label="Reduser antall"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleIncrease(item)}
+                          disabled={disabled}
+                          aria-label="Ok antall"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end justify-between">
+                      <span className="text-sm font-semibold">
+                        {formatCurrency(lineTotal, item.currency)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => removeItem(item.id)}
+                        disabled={disabled}
+                        aria-label="Fjern produkt"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="text-sm">{(((item.unitPrice ?? 0) * item.quantity) as number).toFixed(2)}</div>
-                </div>
-              ))
+                );
+              })
             ) : (
-              <p className="text-sm text-muted-foreground">Ingen varer i handlekurven.</p>
+              <p className="text-sm text-muted-foreground">
+                Ingen varer i handlekurven.
+              </p>
             )}
           </div>
           <DrawerFooter>
             <div className="flex items-center justify-between text-sm">
               <span>Sum</span>
-              <span className="font-medium">{cart?.totalAmount ? `kr ${cart.totalAmount.toFixed(2)}` : 'kr 0,00'}</span>
+              <span className="font-medium">
+                {formatCurrency(
+                  cart?.totalAmount ?? null,
+                  cart?.currency ?? "NOK"
+                )}
+              </span>
             </div>
-            <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black">Gå til kassen</Button>
+            <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black">
+              Ga til kassen
+            </Button>
             <DrawerClose asChild>
               <Button variant="outline">Lukk</Button>
             </DrawerClose>
@@ -504,5 +687,5 @@ export function Header() {
         </DrawerContent>
       </Drawer>
     </>
-  )
+  );
 }

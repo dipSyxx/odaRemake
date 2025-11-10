@@ -1,8 +1,9 @@
 "use client";
 
 import { create } from "zustand";
+import type { SerializedProduct } from "@/lib/serializers";
 
-type User = {
+export type User = {
   id: string;
   email: string;
   name?: string | null;
@@ -13,16 +14,16 @@ type User = {
   updatedAt?: string;
 } | null;
 
-type CartItem = {
+export type CartItem = {
   id: string;
-  productId: number;
+  productId: string;
   quantity: number;
   unitPrice: number | null;
   currency: string;
-  product?: any | null;
+  product?: SerializedProduct | null;
 };
 
-type Cart = {
+export type Cart = {
   id: string;
   userId: string | null;
   status: string;
