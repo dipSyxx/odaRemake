@@ -3,14 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Search, Edit, Trash2, Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -21,7 +14,9 @@ interface Product {
   fullName: string
   brand: string | null
   grossPrice: number
-  isAvailable: boolean
+  availability: {
+    isAvailable: boolean
+  }
   createdAt: string
 }
 
@@ -131,15 +126,13 @@ export default function AdminProductsPage() {
                       <TableCell>{product.brand || '-'}</TableCell>
                       <TableCell>NOK {product.grossPrice.toFixed(2)}</TableCell>
                       <TableCell>
-                        {product.isAvailable ? (
+                        {product.availability?.isAvailable ? (
                           <span className="text-green-600">Yes</span>
                         ) : (
                           <span className="text-red-600">No</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {new Date(product.createdAt).toLocaleDateString('no-NO')}
-                      </TableCell>
+                      <TableCell>{new Date(product.createdAt).toLocaleDateString('no-NO')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Link href={`/admin/products/${product.id}`}>
@@ -168,4 +161,3 @@ export default function AdminProductsPage() {
     </div>
   )
 }
-
