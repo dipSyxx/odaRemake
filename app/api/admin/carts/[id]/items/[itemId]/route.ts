@@ -5,7 +5,7 @@ import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import { cartItemUpdateSchema } from '@/lib/validators/cart'
 import { serializeCart } from '@/lib/serializers'
-import { cartInclude } from '../../../../../../carts/helpers'
+import { cartInclude } from '@/app/api/carts/helpers'
 
 type RouteCtx = {
   params: Promise<{ id: string; itemId: string }>
@@ -128,4 +128,3 @@ function handleError(error: unknown) {
   console.error('Admin Cart Items API error:', error)
   return NextResponse.json({ error: 'Intern tjenerfeil' }, { status: 500 })
 }
-
