@@ -62,16 +62,17 @@ export async function POST(request: NextRequest) {
       }
 
       orderItems = cart.items.map((item) => ({
-        productId: item.productId,
-        productName: item.product.name,
+        productName: item.product?.name ?? `Produkt #${item.productId ?? 'ukjent'}`,
         unitPrice: item.unitPrice,
         quantity: item.quantity,
         currency: item.currency,
-        product: item.productId
+        ...(item.productId
           ? {
-              connect: { id: item.productId },
+              product: {
+                connect: { id: item.productId },
+              },
             }
-          : undefined,
+          : {}),
       }))
     }
 

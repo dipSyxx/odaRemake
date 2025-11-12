@@ -677,8 +677,15 @@ export function Header() {
                 )}
               </span>
             </div>
-            <Button className="bg-[#ff9500] hover:bg-[#e68600] text-black">
-              Ga til kassen
+            <Button
+              className="bg-[#ff9500] hover:bg-[#e68600] text-black"
+              asChild
+              onClick={() => setCartOpen(false)}
+            >
+              <Link href="/kasse">Gå til kassen</Link>
+            </Button>
+            <Button variant="outline" asChild onClick={() => setCartOpen(false)}>
+              <Link href="/bestillinger">Se tidligere bestillinger</Link>
             </Button>
             <DrawerClose asChild>
               <Button variant="outline">Lukk</Button>
