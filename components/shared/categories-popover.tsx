@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useMemo, useState } from 'react'
-import type { ComponentType, ReactNode } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { useCallback, useMemo, useState } from "react";
+import type { ComponentType, ReactNode } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   Gift,
   Loader2,
@@ -29,53 +29,57 @@ import {
   Flower2,
   Cigarette,
   type LucideIcon,
-} from 'lucide-react'
+} from "lucide-react";
 
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useCategoryMenu } from '@/hooks/use-category-menu'
-import type { SerializedCategory } from '@/lib/serializers'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCategoryMenu } from "@/hooks/use-category-menu";
+import type { SerializedCategory } from "@/lib/serializers";
 
 const SHORTCUTS = [
-  { label: 'Nyheter', icon: Sparkles, href: '/nyheter' },
-  { label: 'Tilbud', icon: Percent, href: '/tilbud' },
-  { label: 'Alle produkter', icon: Package, href: '/produkter' },
-  { label: 'Kjøp gavekort', icon: Gift, href: '/gaver' },
-]
+  { label: "Nyheter", icon: Sparkles, href: "/nyheter" },
+  { label: "Tilbud", icon: Percent, href: "/tilbud" },
+  { label: "Alle produkter", icon: Package, href: "/produkter" },
+  { label: "Kjøp gavekort", icon: Gift, href: "/gaver" },
+];
 
 // Fallback icon for categories without specific icon mapping
-const DefaultIcon = Package
+const DefaultIcon = Package;
 
 // Map all category names from seed.ts to icons
 // Note: Only categories with products (productCount > 0) will be displayed in the UI
 // Categories are filtered by productCount > 0 before rendering
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  'Frukt og grønt': Apple,
-  'Frokostblandinger og müsli': Coffee,
+  "Frukt og grønt": Apple,
+  "Frokostblandinger og müsli": Coffee,
   Plantebasert: Milk,
-  'Fisk og sjømat': Fish,
+  "Fisk og sjømat": Fish,
   Pålegg: ShoppingBag,
   Drikke: Coffee,
-  'Iskrem, dessert og kjeks': Cookie,
-  'Baby og barn': Baby,
-  'Legemidler og helsekost': Pill,
-  'Hus og hjem': Home,
+  "Iskrem, dessert og kjeks": Cookie,
+  "Baby og barn": Baby,
+  "Legemidler og helsekost": Pill,
+  "Hus og hjem": Home,
   Dyr: Cat,
-  'Bakeri og konditori': Package,
-  'Meieri, ost og egg': Milk,
-  'Kylling og kjøtt': Beef,
+  "Bakeri og konditori": Package,
+  "Meieri, ost og egg": Milk,
+  "Kylling og kjøtt": Beef,
   Restauranter: UtensilsCrossed,
-  'Middager og tilbehør': UtensilsCrossed,
+  "Middager og tilbehør": UtensilsCrossed,
   Bakeingredienser: Cookie,
-  'Sjokolade, snacks og godteri': Candy,
+  "Sjokolade, snacks og godteri": Candy,
   Trening: Dumbbell,
-  'Hygiene og skjønnhet': ShoppingBag,
-  'Blomster og planter': Flower2,
-  'Snus og tobakk': Cigarette,
-} as const
+  "Hygiene og skjønnhet": ShoppingBag,
+  "Blomster og planter": Flower2,
+  "Snus og tobakk": Cigarette,
+} as const;
 
 /**
  * Get icon for a category.
@@ -85,21 +89,30 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 function getCategoryIcon(categoryName: string): LucideIcon {
   // Since we filter categories by productCount > 0, only categories with products
   // will reach this function. But we still use DefaultIcon as fallback for safety.
-  return CATEGORY_ICONS[categoryName] ?? DefaultIcon
+  return CATEGORY_ICONS[categoryName] ?? DefaultIcon;
 }
 
 type CategoriesPopoverProps = {
-  trigger: ReactNode
-}
+  trigger: ReactNode;
+};
 
 export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
-  const [open, setOpen] = useState(false)
-  const { categories, loading, error, hasFetched, refetch } = useCategoryMenu(open)
+  const [open, setOpen] = useState(false);
+  const { categories, loading, error, hasFetched, refetch } =
+    useCategoryMenu(open);
+
+  const handleNavigate = useCallback(() => setOpen(false), [setOpen]);
 
   // Filter only categories with products (productCount > 0)
-  const categoriesWithProducts = useMemo(() => categories.filter((cat) => (cat.productCount ?? 0) > 0), [categories])
+  const categoriesWithProducts = useMemo(
+    () => categories.filter((cat) => (cat.productCount ?? 0) > 0),
+    [categories]
+  );
 
-  const featured = useMemo(() => categoriesWithProducts.slice(0, 9), [categoriesWithProducts])
+  const featured = useMemo(
+    () => categoriesWithProducts.slice(0, 9),
+    [categoriesWithProducts]
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -117,7 +130,11 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
               </p>
               <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
                 {SHORTCUTS.map((shortcut) => (
-                  <ShortcutButton key={shortcut.label} {...shortcut} />
+                  <ShortcutButton
+                    key={shortcut.label}
+                    {...shortcut}
+                    onNavigate={handleNavigate}
+                  />
                 ))}
               </div>
             </section>
@@ -135,7 +152,11 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {featured.map((category) => (
-                    <FeaturedCategoryCard key={category.id} category={category} />
+                    <FeaturedCategoryCard
+                      key={category.id}
+                      category={category}
+                      onNavigate={handleNavigate}
+                    />
                   ))}
                 </div>
               )}
@@ -147,11 +168,16 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
               <div>
                 <p className="text-sm font-semibold">Utforsk kategorier</p>
                 <p className="text-xs text-muted-foreground">
-                  {loading ? 'Laster innhold...' : `${categoriesWithProducts.length} kategorier tilgjengelige`}
+                  {loading
+                    ? "Laster innhold..."
+                    : `${categoriesWithProducts.length} kategorier tilgjengelige`}
                 </p>
               </div>
               {!hasFetched || loading ? (
-                <Badge variant="secondary" className="flex items-center gap-2 w-fit">
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-2 w-fit"
+                >
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Laster
                 </Badge>
@@ -161,7 +187,12 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
             {error ? (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive space-y-2">
                 <p>{error}</p>
-                <Button variant="outline" size="sm" className="gap-2" onClick={refetch}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={refetch}
+                >
                   <RefreshCw className="h-4 w-4" />
                   Prøv igjen
                 </Button>
@@ -175,40 +206,62 @@ export function CategoriesPopover({ trigger }: CategoriesPopoverProps) {
                 ))}
               </div>
             ) : (
-              <CategoryList categories={categoriesWithProducts} />
+              <CategoryList
+                categories={categoriesWithProducts}
+                onNavigate={handleNavigate}
+              />
             )}
           </div>
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }
 
 type ShortcutProps = {
-  label: string
-  icon: ComponentType<{ className?: string }>
-  href: string
-}
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  href: string;
+  onNavigate?: () => void;
+};
 
-function ShortcutButton({ label, icon: Icon, href }: ShortcutProps) {
+function ShortcutButton({
+  label,
+  icon: Icon,
+  href,
+  onNavigate,
+}: ShortcutProps) {
   return (
-    <Button variant="secondary" size="sm" className="w-full justify-start gap-2 rounded-lg" asChild>
-      <Link href={href}>
+    <Button
+      variant="secondary"
+      size="sm"
+      className="w-full justify-start gap-2 rounded-lg"
+      asChild
+    >
+      <Link href={href} onClick={onNavigate}>
         <Icon className="h-4 w-4 text-foreground/80" />
         {label}
       </Link>
     </Button>
-  )
+  );
 }
 
-function FeaturedCategoryCard({ category }: { category: SerializedCategory }) {
+function FeaturedCategoryCard({
+  category,
+  onNavigate,
+}: {
+  category: SerializedCategory;
+  onNavigate?: () => void;
+}) {
   const fallbackImage =
     category.imageUrl ??
-    category.products?.find((link) => link.product?.images?.length)?.product?.images?.[0]?.large?.url
+    category.products?.find((link) => link.product?.images?.length)?.product
+      ?.images?.[0]?.large?.url;
 
   return (
     <Link
       href={`/kategorier/${category.slug}`}
+      onClick={onNavigate}
       className="group relative h-16 md:h-20 w-full overflow-hidden rounded-lg border border-border/60 transition hover:border-border hover:shadow-md"
     >
       {fallbackImage ? (
@@ -224,53 +277,84 @@ function FeaturedCategoryCard({ category }: { category: SerializedCategory }) {
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-1.5 md:p-2">
-        <p className="text-[10px] md:text-xs font-semibold text-white line-clamp-2 drop-shadow-sm">{category.name}</p>
+        <p className="text-[10px] md:text-xs font-semibold text-white line-clamp-2 drop-shadow-sm">
+          {category.name}
+        </p>
       </div>
     </Link>
-  )
+  );
 }
 
-function CategoryList({ categories }: { categories: SerializedCategory[] }) {
+function CategoryList({
+  categories,
+  onNavigate,
+}: {
+  categories: SerializedCategory[];
+  onNavigate?: () => void;
+}) {
   if (!categories.length) {
-    return <p className="text-sm text-muted-foreground">Ingen kategorier er tilgjengelige for øyeblikket.</p>
+    return (
+      <p className="text-sm text-muted-foreground">
+        Ingen kategorier er tilgjengelige for øyeblikket.
+      </p>
+    );
   }
 
   // Split categories into two columns on desktop, single column on mobile
-  const midPoint = Math.ceil(categories.length / 2)
-  const leftColumn = categories.slice(0, midPoint)
-  const rightColumn = categories.slice(midPoint)
+  const midPoint = Math.ceil(categories.length / 2);
+  const leftColumn = categories.slice(0, midPoint);
+  const rightColumn = categories.slice(midPoint);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 md:gap-x-4 gap-y-2">
       <div className="space-y-2">
         {leftColumn.map((category) => (
-          <CategoryItem key={category.id} category={category} />
+          <CategoryItem
+            key={category.id}
+            category={category}
+            onNavigate={onNavigate}
+          />
         ))}
       </div>
       <div className="space-y-2">
         {rightColumn.map((category) => (
-          <CategoryItem key={category.id} category={category} />
+          <CategoryItem
+            key={category.id}
+            category={category}
+            onNavigate={onNavigate}
+          />
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-function CategoryItem({ category }: { category: SerializedCategory }) {
-  const Icon = getCategoryIcon(category.name)
+function CategoryItem({
+  category,
+  onNavigate,
+}: {
+  category: SerializedCategory;
+  onNavigate?: () => void;
+}) {
+  const Icon = getCategoryIcon(category.name);
 
   return (
     <Link
       href={`/kategorier/${category.slug}`}
+      onClick={onNavigate}
       className="group flex items-center gap-2 md:gap-3 rounded-lg p-2 transition hover:bg-secondary/40"
     >
       <div className="flex h-7 w-7 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-md bg-secondary/50 text-foreground/70 group-hover:bg-secondary group-hover:text-foreground">
         <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{category.name}</p>
+        <p className="truncate text-sm font-medium text-foreground">
+          {category.name}
+        </p>
       </div>
-      <span className="text-xs text-muted-foreground shrink-0">{category.productCount ?? 0}</span>
+      <span className="text-xs text-muted-foreground shrink-0">
+        {category.productCount ?? 0}
+      </span>
     </Link>
-  )
+  );
 }

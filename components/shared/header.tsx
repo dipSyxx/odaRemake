@@ -47,7 +47,6 @@ import {
 } from "@/components/ui/sheet";
 import { cloneElement, useMemo, useState } from "react";
 import Image from "next/image";
-import { CategoriesPopover } from "./categories-popover";
 import { useCategoryMenu } from "@/hooks/use-category-menu";
 import { Skeleton } from "../ui/skeleton";
 import { Separator } from "../ui/separator";
@@ -77,6 +76,7 @@ import {
   Flower2,
   Cigarette,
 } from "lucide-react";
+import { CategoriesPopover } from "./categories-popover";
 
 const SHORTCUTS = [
   { label: "Nyheter", icon: Sparkles, href: "/nyheter" },
@@ -684,7 +684,11 @@ export function Header() {
             >
               <Link href="/kasse">Gå til kassen</Link>
             </Button>
-            <Button variant="outline" asChild onClick={() => setCartOpen(false)}>
+            <Button
+              variant="outline"
+              asChild
+              onClick={() => setCartOpen(false)}
+            >
               <Link href="/bestillinger">Se tidligere bestillinger</Link>
             </Button>
             <DrawerClose asChild>
