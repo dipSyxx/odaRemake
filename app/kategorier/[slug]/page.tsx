@@ -1,6 +1,13 @@
 "use client";
 
-import { use as usePromise, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  use as usePromise,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { motion } from "framer-motion";
 import type { SerializedCategory, SerializedProduct } from "@/lib/serializers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +24,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, Loader2, ShoppingCart } from "lucide-react";
 import { useCartActions } from "@/hooks/use-cart-actions";
+import {
+  fadeIn,
+  fadeInUp,
+  scaleIn,
+  staggerChildren,
+  viewportOnce,
+} from "@/lib/motion-presets";
 
 const PAGE_SIZE = 24;
 
@@ -53,9 +67,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const [products, setProducts] = useState<SerializedProduct[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<{ count: number; skip: number; take: number }>(
-    { count: 0, skip: 0, take: PAGE_SIZE },
-  );
+  const [meta, setMeta] = useState<{
+    count: number;
+    skip: number;
+    take: number;
+  }>({ count: 0, skip: 0, take: PAGE_SIZE });
 
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("latest");
@@ -84,8 +100,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
     const controller = new AbortController();
     fetch(
-      `/api/categories/slug/${slug}?includeChildren=true&includeParent=true`,
-      { cache: "no-store", signal: controller.signal },
+      `/api/categories/slug/${slug}?includeChildren=true&includeParent=true&includeBanners=true`,
+      { cache: "no-store", signal: controller.signal }
     )
       .then(async (res) => {
         if (!res.ok) {
@@ -156,7 +172,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
       return () => controller.abort();
     },
-    [debouncedSearch, page, sort],
+    [debouncedSearch, page, sort]
   );
 
   useEffect(() => {
@@ -187,17 +203,28 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         console.error("add-to-cart error", error);
       }
     },
-    [addItem],
+    [addItem]
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <Link href="/produkter" className="inline-flex items-center gap-1 hover:text-foreground">
+    <motion.div
+      className="container mx-auto px-4 py-8 space-y-8"
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+    >
+      <motion.div
+        variants={fadeInUp}
+        className="flex items-center gap-3 text-sm text-muted-foreground"
+      >
+        <Link
+          href="/produkter"
+          className="inline-flex items-center gap-1 hover:text-foreground"
+        >
           <ChevronLeft className="h-4 w-4" />
           Tilbake til kategorier
         </Link>
-      </div>
+      </motion.div>
 
       {categoryLoading ? (
         <CategorySkeleton />
@@ -207,9 +234,18 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         <CategoryHeader category={category} showingRange={showingRange} />
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-[1fr,280px]">
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <motion.div
+        className="grid gap-4 md:grid-cols-[1fr,280px]"
+        variants={staggerChildren}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+      >
+        <motion.div variants={fadeIn} className="space-y-4">
+          <motion.div
+            variants={fadeInUp}
+            className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+          >
             <Input
               placeholder="Søk etter produkter..."
               value={search}
@@ -228,7 +264,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </motion.div>
 
           {productsError ? (
             <ErrorState message={productsError} />
@@ -239,6 +275,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           ) : (
             <>
               <ProductGrid
+                key={`${page}-${sort}-${debouncedSearch}`}
                 products={products}
                 onAddToCart={handleAddToCart}
                 currentAction={action}
@@ -251,36 +288,50 @@ export default function CategoryPage({ params }: CategoryPageProps) {
               />
             </>
           )}
-        </div>
+        </motion.div>
 
-        <aside className="space-y-6">
+        <motion.aside variants={fadeInUp} className="space-y-6">
           {category?.children && category.children.length > 0 ? (
-            <div className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-3">
+            <motion.div
+              className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-3"
+              variants={scaleIn}
+            >
               <div>
                 <p className="text-sm font-semibold">Underkategorier</p>
                 <p className="text-xs text-muted-foreground">
                   Utforsk flere produkter
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <motion.div
+                className="flex flex-wrap gap-2"
+                variants={staggerChildren}
+              >
                 {category.children.map((child) => (
-                  <Badge key={child.id} variant="secondary" className="px-3 py-1">
-                    <Link href={`/kategorier/${child.slug}`}>{child.name}</Link>
-                  </Badge>
+                  <motion.div key={child.id} variants={fadeInUp}>
+                    <Badge variant="secondary" className="px-3 py-1">
+                      <Link href={`/kategorier/${child.slug}`}>
+                        {child.name}
+                      </Link>
+                    </Badge>
+                  </motion.div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           ) : null}
 
-          <div className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-2">
+          <motion.div
+            variants={scaleIn}
+            className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-2"
+          >
             <p className="text-sm font-semibold">Tips</p>
             <p className="text-sm text-muted-foreground">
-              Klikk på &quot;Legg i handlekurv&quot; for raske kjøp direkte fra kategorien.
+              Klikk på &quot;Legg i handlekurv&quot; for raske kjøp direkte fra
+              kategorien.
             </p>
-          </div>
-        </aside>
-      </div>
-    </div>
+          </motion.div>
+        </motion.aside>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -291,29 +342,88 @@ function CategoryHeader({
   category: SerializedCategory;
   showingRange: string;
 }) {
+  const heroBanner = category.banners?.[0];
+  const heroImage = heroBanner?.imageUrl ?? category.imageUrl ?? null;
+  const heroTarget = heroBanner?.targetUri?.trim() ?? null;
+  const heroHasLink = !!heroTarget;
+  const heroTargetIsExternal = heroTarget
+    ? /^https?:\/\//i.test(heroTarget)
+    : false;
+
   return (
-    <div className="rounded-2xl border border-border/70 bg-secondary/40 p-6 space-y-4">
+    <motion.section
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="rounded-2xl border border-border/70 bg-secondary/40 p-6 space-y-4"
+    >
       <div className="space-y-1">
         <p className="text-sm uppercase tracking-wide text-muted-foreground">
           Kategori
         </p>
         <h1 className="text-3xl font-bold text-foreground">{category.name}</h1>
         {category.description ? (
-          <p className="text-muted-foreground max-w-3xl">{category.description}</p>
+          <p className="text-muted-foreground max-w-3xl">
+            {category.description}
+          </p>
         ) : null}
       </div>
+      {heroImage ? (
+        <motion.div variants={scaleIn}>
+          <div className="relative h-40 w-full overflow-hidden rounded-xl border border-border/50 bg-secondary/30 md:h-56">
+            <Image
+              src={heroImage}
+              alt={heroBanner?.title ?? `${category.name} banner`}
+              fill
+              className="object-cover"
+              sizes="(min-width: 768px) 800px, 100vw"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-background/80 via-background/20 to-transparent" />
+            {(heroBanner?.title ||
+              heroBanner?.promotionTitle ||
+              heroHasLink) && (
+              <div className="absolute inset-0 flex flex-col justify-end gap-1 p-4 text-background">
+                {heroBanner?.promotionTitle ? (
+                  <span className="inline-flex w-fit items-center rounded-full bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground">
+                    {heroBanner.promotionTitle}
+                  </span>
+                ) : null}
+                {heroBanner?.title ? (
+                  <p className="text-lg text-white font-semibold text-background drop-shadow">
+                    {heroBanner.title}
+                  </p>
+                ) : null}
+                {heroHasLink ? (
+                  <Link
+                    href={heroTarget}
+                    target={heroTargetIsExternal ? "_blank" : undefined}
+                    rel={heroTargetIsExternal ? "noreferrer" : undefined}
+                    className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-foreground transition hover:bg-background"
+                  >
+                    Utforsk tilbud
+                  </Link>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      ) : null}
       <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
         {category.parent ? (
           <span>
             Del av{" "}
-            <Link href={`/kategorier/${category.parent.slug}`} className="font-medium underline">
+            <Link
+              href={`/kategorier/${category.parent.slug}`}
+              className="font-medium underline"
+            >
               {category.parent.name}
             </Link>
           </span>
         ) : null}
         <span>{showingRange}</span>
       </div>
-    </div>
+    </motion.section>
   );
 }
 
@@ -327,7 +437,12 @@ function ProductGrid({
   currentAction: string | null;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <motion.div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      variants={staggerChildren}
+      initial="hidden"
+      animate="visible"
+    >
       {products.map((product) => (
         <ProductCard
           key={product.id}
@@ -336,7 +451,7 @@ function ProductGrid({
           currentAction={currentAction}
         />
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -350,19 +465,26 @@ function ProductCard({
   currentAction: string | null;
 }) {
   const image =
-    product.images?.[0]?.thumbnail?.url ?? product.images?.[0]?.large?.url ?? null;
+    product.images?.[0]?.thumbnail?.url ??
+    product.images?.[0]?.large?.url ??
+    null;
   const isAdding = currentAction === `add-${product.id}`;
   const inStock = product.availability?.isAvailable ?? true;
 
   return (
-    <div className="rounded-xl border border-border/60 bg-background p-4 flex flex-col gap-4">
+    <motion.article
+      variants={fadeInUp}
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 280, damping: 26 }}
+      className="rounded-xl border border-border/60 bg-background p-4 flex flex-col gap-4 group"
+    >
       <div className="relative h-40 w-full overflow-hidden rounded-lg bg-secondary/30">
         {image ? (
           <Image
             src={image}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="320px"
           />
         ) : (
@@ -378,7 +500,9 @@ function ProductCard({
         <h3 className="text-base font-semibold leading-snug line-clamp-2">
           {product.fullName ?? product.name}
         </h3>
-        <p className="text-lg font-bold">{formatCurrency(product.grossPrice)}</p>
+        <p className="text-lg font-bold">
+          {formatCurrency(product.grossPrice)}
+        </p>
         <p className="text-xs text-muted-foreground">
           {inStock ? "På lager" : "Midlertidig utsolgt"}
         </p>
@@ -400,32 +524,46 @@ function ProductCard({
           </>
         )}
       </Button>
-    </div>
+    </motion.article>
   );
 }
 
 function CategorySkeleton() {
   return (
-    <div className="space-y-4">
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="space-y-4"
+    >
       <Skeleton className="h-10 w-2/3" />
       <Skeleton className="h-6 w-1/2" />
       <Skeleton className="h-24 w-full" />
-    </div>
+    </motion.div>
   );
 }
 
 function ProductSkeletonGrid() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <motion.div
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      variants={staggerChildren}
+      initial="hidden"
+      animate="visible"
+    >
       {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} className="space-y-4 rounded-xl border border-border/40 p-4">
+        <motion.div
+          key={index}
+          variants={fadeInUp}
+          className="space-y-4 rounded-xl border border-border/40 p-4"
+        >
           <Skeleton className="h-40 w-full rounded-lg" />
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-10 w-full" />
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -441,7 +579,12 @@ function Pagination({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between border-t border-border/60 pt-4 text-sm">
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="flex items-center justify-between border-t border-border/60 pt-4 text-sm"
+    >
       <span>
         Side {page} av {totalPages}
       </span>
@@ -463,31 +606,47 @@ function Pagination({
           Neste
         </Button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-function ErrorState({ message, retryPath }: { message: string; retryPath?: string }) {
+function ErrorState({
+  message,
+  retryPath,
+}: {
+  message: string;
+  retryPath?: string;
+}) {
   return (
-    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-6">
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="rounded-xl border border-destructive/30 bg-destructive/10 p-6"
+    >
       <p className="text-sm font-semibold text-destructive">{message}</p>
       {retryPath ? (
         <Button asChild variant="outline" size="sm" className="mt-4">
           <Link href={retryPath}>Tilbake</Link>
         </Button>
       ) : null}
-    </div>
+    </motion.div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border border-border/60 p-10 text-center">
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="rounded-xl border border-border/60 p-10 text-center"
+    >
       <p className="text-base font-semibold">Ingen produkter å vise</p>
       <p className="text-sm text-muted-foreground">
         Prøv et annet søk eller filtrering.
       </p>
-    </div>
+    </motion.div>
   );
 }
 

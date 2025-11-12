@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { SerializedCategory } from '@/lib/serializers'
+import { fadeIn, fadeInUp, staggerChildren, viewportOnce } from '@/lib/motion-presets'
 
 export default function ProductsPage() {
   const [categories, setCategories] = useState<SerializedCategory[]>([])
@@ -35,21 +37,30 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Handle etter kategori</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <motion.div initial="hidden" animate="visible" variants={fadeIn} className="container mx-auto px-4 py-8">
+        <motion.h1 variants={fadeInUp} className="text-3xl font-bold mb-8">
+          Handle etter kategori
+        </motion.h1>
+        <motion.div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" variants={staggerChildren}>
           {Array.from({ length: 15 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-lg" />
+            <motion.div key={i} variants={fadeInUp}>
+              <Skeleton className="h-48 rounded-lg" />
+            </motion.div>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     )
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+        className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]"
+      >
+        <motion.div variants={fadeInUp} className="text-center">
           <p className="text-destructive mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -57,20 +68,28 @@ export default function ProductsPage() {
           >
             Prøv igjen
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Handle etter kategori</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+    <motion.div initial="hidden" animate="visible" variants={fadeIn} className="container mx-auto px-4 py-8">
+      <motion.h1 variants={fadeInUp} className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">
+        Handle etter kategori
+      </motion.h1>
+      <motion.div
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"
+        variants={staggerChildren}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportOnce}
+      >
         {categories.map((category) => (
           <CategoryCard key={category.id} category={category} />
         ))}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -87,8 +106,14 @@ function CategoryCard({ category }: { category: SerializedCategory }) {
       .filter((url): url is string => !!url) || []
 
   return (
-    <Link href={`/kategorier/${category.slug}`}>
-      <Card className="group relative h-full p-4 bg-secondary/50 hover:bg-secondary/70 transition-all cursor-pointer border-border/60 hover:border-border hover:shadow-md rounded-lg overflow-hidden">
+    <motion.div
+      variants={fadeInUp}
+      whileHover={{ y: -4 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+      className="h-full"
+    >
+      <Link href={`/kategorier/${category.slug}`} className="block h-full">
+        <Card className="group relative h-full p-4 bg-secondary/50 hover:bg-secondary/70 transition-all cursor-pointer border-border/60 hover:border-border hover:shadow-md rounded-lg overflow-hidden">
         <div className="flex flex-col h-full min-h-0">
           {/* Category Title */}
           <div className="flex items-start justify-between mb-2 min-w-0">
@@ -143,7 +168,8 @@ function CategoryCard({ category }: { category: SerializedCategory }) {
             )}
           </div>
         </div>
-      </Card>
-    </Link>
+        </Card>
+      </Link>
+    </motion.div>
   )
 }

@@ -1,5 +1,6 @@
 import type {
   Category,
+  CategoryBanner,
   Cart,
   CartItem,
   Discount,
@@ -50,6 +51,7 @@ export type CategoryWithRelations = Category & {
   products?: (ProductCategory & {
     product?: ProductWithRelations | null
   })[]
+  banners?: CategoryBanner[]
   _count?: {
     products?: number
     children?: number
@@ -175,6 +177,28 @@ export function serializeCategory(category: CategoryWithRelations) {
           sortOrder: link.sortOrder,
           product: link.product ? serializeProduct(link.product) : null,
         }))
+      : undefined,
+    banners: category.banners
+      ? category.banners
+          .filter((banner) => !!banner)
+          .sort((a, b) => {
+            if (a.sortOrder === null || a.sortOrder === undefined) return 1
+            if (b.sortOrder === null || b.sortOrder === undefined) return -1
+            return a.sortOrder - b.sortOrder
+          })
+          .map((banner) => ({
+            id: banner.id,
+            categoryId: banner.categoryId,
+            title: banner.title,
+            imageUrl: banner.imageUrl,
+            targetUri: banner.targetUri,
+            promotionTitle: banner.promotionTitle,
+            promotionStyle: banner.promotionStyle,
+            isSponsor: banner.isSponsor ?? false,
+            sortOrder: banner.sortOrder,
+            createdAt: banner.createdAt.toISOString(),
+            updatedAt: banner.updatedAt.toISOString(),
+          }))
       : undefined,
     createdAt: category.createdAt.toISOString(),
     updatedAt: category.updatedAt.toISOString(),

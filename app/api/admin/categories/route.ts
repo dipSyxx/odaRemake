@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       includeChildren,
       includeParent,
       includeProducts,
+      includeBanners,
       productsLimit,
     } = query
 
@@ -60,6 +61,11 @@ export async function GET(request: NextRequest) {
                     include: productWithRelations,
                   },
                 },
+              }
+            : undefined,
+          banners: includeBanners
+            ? {
+                orderBy: { sortOrder: 'asc' },
               }
             : undefined,
           _count: {

@@ -19,8 +19,13 @@ export async function GET(request: NextRequest, ctx: RouteCtx) {
     const query = categoryDetailQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
     );
-    const { includeChildren, includeParent, includeProducts, productsLimit } =
-      query;
+    const {
+      includeChildren,
+      includeParent,
+      includeProducts,
+      includeBanners,
+      productsLimit,
+    } = query;
 
     const category = await prisma.category.findUnique({
       where: { slug },
@@ -36,6 +41,11 @@ export async function GET(request: NextRequest, ctx: RouteCtx) {
                   include: productWithRelations,
                 },
               },
+            }
+          : undefined,
+        banners: includeBanners
+          ? {
+              orderBy: { sortOrder: "asc" },
             }
           : undefined,
         _count: { select: { products: true, children: true } },

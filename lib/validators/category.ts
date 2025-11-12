@@ -7,6 +7,7 @@ export const categoryListQuerySchema = z.object({
   includeChildren: z.coerce.boolean().optional(),
   includeParent: z.coerce.boolean().optional(),
   includeProducts: z.coerce.boolean().optional(),
+  includeBanners: z.coerce.boolean().optional(),
   parentId: z.string().trim().min(1).optional(),
   rootOnly: z.coerce.boolean().optional(),
   productsLimit: z.coerce.number().int().min(1).max(50).optional(),
@@ -25,6 +26,7 @@ export const categoryDetailQuerySchema = categoryListQuerySchema.pick({
   includeChildren: true,
   includeParent: true,
   includeProducts: true,
+  includeBanners: true,
   productsLimit: true,
 });
 
