@@ -1,27 +1,29 @@
 # odaRemake
 
-> A remake of Oda's public grocery delivery experience with a fully featured API built on Next.js 16 and Prisma.
+> A remake of Oda's public grocery delivery experience with a fully featured API built on Next.js 16 and Prisma.
 
 ## Overview
 
-`odaRemake` is a learning-focused full-stack app that recreates Oda’s marketing site, authentication screens, and backend for managing the product catalog, carts, and users. The project showcases how Next.js App Router, Prisma ORM, and NextAuth work together via Server Actions and API Routes.
+`odaRemake` is a learning-focused full‑stack app that recreates Oda's marketing site, authentication flow, and backend for managing the product catalog, categories, carts, orders, and users. The project demonstrates how the Next.js App Router, Prisma ORM, and NextAuth integrate via Server Actions and API Routes to deliver a cohesive grocery shopping journey.
 
 ## Highlights
 
-- Animated home page featuring banners, recipes, benefits, and calls-to-action powered by shared `framer-motion` presets.
-- Responsive header with search, dark/light theme toggle, and a live cart preview managed through a Zustand store.
-- Login and registration pages with `react-hook-form` + `zod` validation and a NextAuth credentials provider (bcrypt password hashing).
-- REST API for products, users, and carts with rich validation schemas, Prisma Decimal serialization, and consistent error handling.
-- PostgreSQL schema with products, discounts, promotions, and demo seed data mirroring the Oda catalog.
-- Token-based Tailwind CSS 4 theme with `localStorage` persistence and Vercel Analytics integration out of the box.
+- Animated landing page sections (hero, benefits, recipes, delivery) powered by shared `framer-motion` presets.
+- Responsive header with search, dark/light theme toggle, improved mini-cart drawer (quantity controls, remove buttons, thumbnails), and category popover/sheet fed by lazy API calls.
+- Dynamic category browsing (`/kategorier/[slug]`) with pagination, sorting, search, child-category chips, and inline “Legg i handlekurv” actions.
+- Complete cart → checkout → order-success flow implemented with a reusable `useCartActions` hook that persists cart IDs and talks to the REST API.
+- Authentication screens built with `react-hook-form` + `zodResolver` and a NextAuth credentials provider (bcrypt hashing).
+- REST API for products, categories, carts, orders, and users with Zod validation, Prisma Decimal serialization, and consistent error responses.
+- PostgreSQL schema with realistic seed data for products, promotions, discounts, carts, and banners.
+- Tailwind CSS 4 design tokens, theme persistence, and Vercel Analytics baked in.
 
 ## Tech Stack
 
-- Next.js 16 (App Router) + React 19
-- TypeScript 5, ESLint
-- Tailwind CSS 4, `tw-animate-css`, custom design tokens
+- Next.js 16 (App Router) + React 19
+- TypeScript 5, ESLint
+- Tailwind CSS 4, `tw-animate-css`, custom token system
 - Prisma ORM + PostgreSQL
-- NextAuth.js 4 (JWT session strategy)
+- NextAuth.js 4 (JWT strategy)
 - Zustand, React Hook Form, Zod
 - Radix UI / shadcn components, Framer Motion, Lucide Icons
 - Vercel Analytics
@@ -30,96 +32,96 @@
 
 ### Prerequisites
 
-- Node.js ≥ 20.0.0 (20.18 LTS recommended)
-- `pnpm` ≥ 9 (`pnpm-lock.yaml` is committed)
+- Node.js ≥ 20.0.0 (20.18 LTS recommended)
+- `pnpm` 9 (lockfile committed)
 - Running PostgreSQL instance
 
 ### Local Development
 
 1. Install dependencies: `pnpm install`.
-2. Create a `.env` file, copy the variables listed below, and fill in your PostgreSQL connection and NextAuth secrets.
+2. Copy `.env.example` to `.env` (or create one) and fill in the variables listed below.
 3. Sync the schema: `pnpm prisma db push`.
-4. Seed demo data: `pnpm prisma db seed` (creates sample users, products, discounts, and carts).
+4. Seed demo data: `pnpm prisma db seed`.
 5. Start the dev server: `pnpm dev` and open `http://localhost:3000`.
 
-> **Tip:** After changing the Prisma schema, rerun `pnpm prisma db push` and, if needed, `pnpm prisma db seed`.
+> After changing the Prisma schema, rerun `pnpm prisma db push` (and optionally `pnpm prisma db seed`) to refresh the local database.
 
 ## Environment Variables
 
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | Primary Prisma connection string for PostgreSQL (pooled). |
-| `POSTGRES_URL_NON_POOLING` | Direct (non-pooling) URL for migrations and `prisma db push`. |
-| `NEXTAUTH_URL` | Base application URL used by NextAuth for callback generation. |
-| `NEXTAUTH_SECRET` | Secret for signing NextAuth JWT sessions. |
-| `AUTH_SECRET` | Mirror of the NextAuth secret for middleware compatibility. |
+| `POSTGRES_URL_NON_POOLING` | Direct (non-pooling) URL for Prisma CLI operations. |
+| `NEXTAUTH_URL` | Base application URL used by NextAuth for callbacks. |
+| `NEXTAUTH_SECRET` / `AUTH_SECRET` | Secret for signing JWT sessions. |
 
-Optional `PG*` and `POSTGRES_*` values can stay for Vercel or Prisma Accelerate setups, but for local work the keys above are sufficient.
+Optional `PG*` / `POSTGRES_*` keys can remain for hosting providers, but the variables above are sufficient for local work.
 
 ## Database & Prisma
 
-- The schema in `prisma/schema.prisma` covers `User`, `Cart`, `CartItem`, `Product`, `ProductImage`, `ProductClassifier`, `Discount`, and `Promotion`, plus enums describing cart and promotion states.
-- `prisma/seed.ts` ingests realistic products, discounts, and carts, transforming raw data into Prisma structures and rebuilding related collections (images, classifiers, promotions).
-- `prisma/prisma-client.ts` implements a singleton client to prevent connection churn during development.
-- `prisma.config.ts` hooks into the classic migration engine and loads `DATABASE_URL` via `dotenv`.
+- `prisma/schema.prisma` defines users, products, images, classifiers, discounts, promotions, categories, carts, cart items, orders, and enums describing statuses.
+- `prisma/seed.ts` rebuilds all relations (images, promotions, categories, banners) to deliver a realistic grocery catalog.
+- `prisma/prisma-client.ts` exposes a singleton Prisma client to avoid connection churn in development.
+- `prisma.config.ts` wires Prisma CLI to load the `.env` file automatically.
 
-## API
+## API Surface
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/products` | Lists products with pagination and search (`search`, `skip`, `take`). |
-| `POST` | `/api/products` | Creates a product with related images and promotions (validated by `productCreateSchema`). |
-| `GET` | `/api/products/:id` | Returns detailed product info. |
-| `PUT` | `/api/products/:id` | Partially updates a product and its relations (rebuilds nested collections). |
-| `DELETE` | `/api/products/:id` | Removes a product. |
-| `GET` | `/api/carts` | Lists carts with optional `userId`, `status`, and pagination parameters. |
-| `POST` | `/api/carts` | Creates a cart with optional user link or initial items. |
-| `GET / PUT / DELETE` | `/api/carts/:id` | Fetches, updates, or deletes a cart and recomputes totals as needed. |
-| `POST` | `/api/carts/:id/items` | Upserts a cart item (adds or replaces quantities/prices). |
-| `PATCH / DELETE` | `/api/carts/:id/items/:itemId` | Updates or removes a cart item and syncs totals. |
-| `GET` | `/api/users` | Lists users with search and pagination. |
-| `POST` | `/api/users` | Creates a user, hashing the password with bcrypt. |
-| `GET / PUT / DELETE` | `/api/users/:id` | Manages an individual user. |
-| `GET` | `/api/me` | Returns the current user profile and active cart based on the JWT session. |
-| `GET / POST` | `/api/auth/[...nextauth]` | NextAuth credential routes. |
+| `GET` | `/api/products` | List products with pagination, search, and category filtering. |
+| `POST` | `/api/products` | Create a product plus nested images/promotions (`productCreateSchema`). |
+| `GET / PUT / DELETE` | `/api/products/:id` | Retrieve or mutate a single product (rebuilds nested relations). |
+| `GET` | `/api/categories` | List categories with optional parent filters, search, and product eager-loading. |
+| `POST` | `/api/categories` | Create a category (supports parent assignment). |
+| `GET / PUT / DELETE` | `/api/categories/:id` | Manage categories by ID. |
+| `GET` | `/api/categories/slug/:slug` | Fetch a category via slug, optionally returning children and first N products. |
+| `GET` | `/api/carts` | List carts with optional `userId`, `status`, and pagination. |
+| `POST` | `/api/carts` | Create a cart (guest or linked to a user). |
+| `GET / PUT / DELETE` | `/api/carts/:id` | Fetch, update, or delete a cart; totals are kept in sync. |
+| `POST` | `/api/carts/:id/items` | Upsert cart items (quantity merges). |
+| `PUT / DELETE` | `/api/carts/:id/items/:itemId` | Update or remove a specific cart item. |
+| `GET` | `/api/orders` | List orders with `userId`, `status`, and `paymentStatus` filters. |
+| `POST` | `/api/orders` | Create an order, optionally hydrating from an existing cart. |
+| `GET / PUT` | `/api/orders/:id` | Retrieve or update an order's status/payment info. |
+| `GET` | `/api/users` | List users with search + pagination. |
+| `POST` | `/api/users` | Create a user (bcrypt password hashing). |
+| `GET / PUT / DELETE` | `/api/users/:id` | Manage a single user. |
+| `GET` | `/api/me` | Return the current session user and their active cart. |
+| `GET / POST` | `/api/auth/[...nextauth]` | NextAuth credential/provider routes. |
 
-Validation is handled with Zod, and responses are serialized via `lib/serializers.ts` to convert Prisma `Decimal` values to numbers and format dates as ISO strings.
+Validation is handled with Zod. Responses are serialized through `lib/serializers.ts` to convert Prisma `Decimal` values to numbers and emit ISO dates.
 
 ## Project Structure
 
-- `app/` – App Router pages, global layout, and providers (`layout.tsx`, `providers.tsx`, `app/(auth)`).
-- `components/shared/` – composite UI blocks (header, footer, landing sections).
-- `components/ui/` – Radix/shadcn-inspired UI primitives tailored to Tailwind 4.
-- `hooks/` – custom hooks, most notably `use-user-store.ts` (Zustand) for user and cart state.
-- `lib/` – helper utilities: NextAuth options (`auth.ts`), theme provider (`theme-provider.tsx`), motion presets, API serializers.
-- `prisma/` – schema, client wrapper, and database seeders.
-- `public/` – static assets and illustrations, including authentication artwork.
-- `styles/` – global styles and Tailwind tokens.
-- `types/next-auth.d.ts` – NextAuth type augmentation exposing `user.id` on the session.
+- `app/` – App Router pages, layouts, and route groups (auth, admin, produkter, kategorier, kasse, etc.).
+- `components/shared/` – Composite UI (header, footer, home sections, categories popover).
+- `components/ui/` – Radix/shadcn-inspired primitives tailored for Tailwind 4.
+- `hooks/` – Custom hooks such as `use-user-store` (Zustand) and `use-cart-actions` (cart persistence + API helpers).
+- `lib/` – Auth config, theme provider, motion presets, utilities, API serializers, validators.
+- `prisma/` – Schema, client wrapper, seed script, Prisma config.
+- `public/` – Static images/illustrations.
+- `styles/` – Global CSS / token definitions.
+- `types/` – NextAuth session augmentation (`user.id`, `isAdmin`).
 
-## UI & Frontend
+## UI & Frontend Notes
 
-- The header (`components/shared/header.tsx`) combines search, theme toggle, mini-cart drawer, and adaptive navigation.
-- Landing sections (`components/shared/home`) share animation presets (`lib/motion-presets.ts`) and Tailwind tokens.
-- Auth screens rely on `react-hook-form` + `zodResolver`, display themed illustrations (`public/images/login-image-*.svg`), and call NextAuth `signIn`.
-- The global provider (`app/providers.tsx`) wires `SessionProvider`, `ThemeProvider`, and hydrates the Zustand store via `fetch /api/me`.
+- The header combines navigation, search, theme toggle, lazy categories popover (desktop + mobile sheet), and the enhanced cart drawer.
+- Category detail pages pull products via the `/api/products` endpoint, show child-category quick links, and allow adding items to the cart from the listing grid.
+- Checkout (`app/kasse/page.tsx`) collects shipping/billing details, calls the orders API, and redirects to `app/kasse/suksess/page.tsx`, which fetches the created order.
+- Global providers (`app/providers.tsx`) wire `SessionProvider`, `ThemeProvider`, and hydrate the Zustand store by calling `/api/me` on mount.
 
 ## Scripts
 
-- `pnpm dev` – start the Next.js dev server.
-- `pnpm build` – production build (`next build`).
-- `pnpm start` – run the compiled app.
-- `pnpm lint` – execute ESLint.
-- `pnpm prisma db push` or `pnpm prisma migrate deploy` – sync schema changes with the database.
-- `pnpm prisma db seed` – apply seed data (also triggered by `pnpm postinstall`).
+- `pnpm dev` – Start Next.js in development mode.
+- `pnpm build` – Production build (`next build`).
+- `pnpm start` – Run the compiled app.
+- `pnpm lint` – ESLint.
+- `pnpm prisma db push` – Sync schema to the database.
+- `pnpm prisma migrate deploy` – Run generated migrations.
+- `pnpm prisma db seed` – Seed demo data (also runs on `postinstall`).
 
-## Quality Checks
+## Quality Checks & Tips
 
-- `tsconfig.json` targets Next 16 and React 19. Because `next.config.mjs` currently ignores build-time TS errors, rely on IDE diagnostics or run `tsc --noEmit` manually.
-- ESLint covers the entire project; run `pnpm lint` before committing.
-
-## Next Steps (Ideas)
-
-- Add e2e tests for key cart flows (e.g., with Playwright).
-- Wire the product search UI to the `/api/products` endpoint for real filtering.
-- Expand NextAuth with social providers and protect API routes via middleware.
+- `tsconfig.json` targets Next 16/React 19. `next.config.mjs` currently ignores build-time TS errors, so rely on IDE diagnostics or run `tsc --noEmit` manually if needed.
+- ESLint covers the repo; run `pnpm lint` before committing (install `eslint` locally if your environment doesn't provide it).
+- Cart/order flows are fully testable via the exposed REST API—feel free to script e2e tests (e.g., Playwright) around `/kategorier/[slug]`, `/kasse`, and `/kasse/suksess`.
