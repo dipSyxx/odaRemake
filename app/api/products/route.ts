@@ -14,6 +14,8 @@ import {
   PRODUCT_SORT_MAP,
   buildProductCreateData,
 } from "./utils";
+import { applyRateLimit, verifyCsrf } from "@/lib/security";
+import { requireSessionUser, requireAdminUser } from "@/lib/api-guards";
 
 export async function GET(request: NextRequest) {
   try {
@@ -84,6 +86,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimited = await applyRateLimit(request, { key: "products-write" });
+  if (rateLimited) return rateLimited;
+
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+  const adminError = requireAdminUser(auth.user);
+  if (adminError) return adminError;
+
+  const csrfError = verifyCsrf(request);
+  if (csrfError) return csrfError;
+
   try {
     const raw = await request.json();
     const data = productCreateSchema.parse(raw);

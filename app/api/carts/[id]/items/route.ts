@@ -2,15 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
-import { cartItemCreateSchema, cartItemUpdateSchema } from '@/lib/validators/cart'
+import { cartItemCreateSchema } from '@/lib/validators/cart'
 import { serializeCart, productWithRelations } from '@/lib/serializers'
 import { cartInclude } from '../../helpers'
+import { requireSessionUser, ensureOwnerOrAdmin } from '@/lib/api-guards'
+import { applyRateLimit, verifyCsrf } from '@/lib/security'
 
 type RouteCtx = {
   params: Promise<{ id: string }>
 }
 
 export async function POST(request: NextRequest, ctx: RouteCtx) {
+  const rateLimited = await applyRateLimit(request, { key: 'cart-items' })
+  if (rateLimited) return rateLimited
+
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
+  const csrfError = verifyCsrf(request)
+  if (csrfError) return csrfError
+
   try {
     const { id: cartId } = await ctx.params
     const raw = await request.json()
@@ -19,11 +30,15 @@ export async function POST(request: NextRequest, ctx: RouteCtx) {
     // Verify cart exists
     const cart = await prisma.cart.findUnique({
       where: { id: cartId },
+      select: { id: true, userId: true, currency: true },
     })
 
     if (!cart) {
       return NextResponse.json({ error: 'Fant ikke handlekurv.' }, { status: 404 })
     }
+
+    const ownershipError = ensureOwnerOrAdmin(auth.user, cart.userId)
+    if (ownershipError) return ownershipError
 
     // Get product to get current price if not provided
     const product = await prisma.product.findUnique({

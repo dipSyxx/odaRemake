@@ -8,6 +8,8 @@ import {
   serializeProduct,
 } from "@/lib/serializers";
 import { buildProductUpdateData } from "../utils";
+import { requireSessionUser, requireAdminUser } from "@/lib/api-guards";
+import { applyRateLimit, verifyCsrf } from "@/lib/security";
 
 type RouteCtx = {
   params: Promise<{ id: string }>;
@@ -35,6 +37,17 @@ export async function GET(_: NextRequest, ctx: RouteCtx) {
 }
 
 export async function PUT(request: NextRequest, ctx: RouteCtx) {
+  const rateLimited = await applyRateLimit(request, { key: "products-write" });
+  if (rateLimited) return rateLimited;
+
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+  const adminError = requireAdminUser(auth.user);
+  if (adminError) return adminError;
+
+  const csrfError = verifyCsrf(request);
+  if (csrfError) return csrfError;
+
   try {
     const { id } = await ctx.params;
     const raw = await request.json();
@@ -77,6 +90,17 @@ export async function PUT(request: NextRequest, ctx: RouteCtx) {
 }
 
 export async function DELETE(_: NextRequest, ctx: RouteCtx) {
+  const rateLimited = await applyRateLimit(_, { key: "products-write" });
+  if (rateLimited) return rateLimited;
+
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+  const adminError = requireAdminUser(auth.user);
+  if (adminError) return adminError;
+
+  const csrfError = verifyCsrf(_);
+  if (csrfError) return csrfError;
+
   try {
     const { id } = await ctx.params;
     await prisma.product.delete({ where: { id } });

@@ -3,6 +3,8 @@ import prisma from "@/prisma/prisma-client";
 import { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { serializeUser } from "@/lib/serializers";
+import { requireSessionUser, ensureOwnerOrAdmin } from "@/lib/api-guards";
+import { applyRateLimit, verifyCsrf } from "@/lib/security";
 
 const userUpdateSchema = z
   .object({
@@ -43,11 +45,16 @@ type RouteCtx = {
 };
 
 export async function GET(_: NextRequest, ctx: RouteCtx) {
-  try {
-    const { id } = await ctx.params;
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
 
+  const { id: requestedUserId } = await ctx.params;
+  const ownershipError = ensureOwnerOrAdmin(auth.user, requestedUserId);
+  if (ownershipError) return ownershipError;
+
+  try {
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: { id: requestedUserId },
     });
 
     if (!user) {
@@ -61,9 +68,20 @@ export async function GET(_: NextRequest, ctx: RouteCtx) {
 }
 
 export async function PUT(request: NextRequest, ctx: RouteCtx) {
-  try {
-    const { id } = await ctx.params;
+  const rateLimited = await applyRateLimit(request, { key: "users-write" });
+  if (rateLimited) return rateLimited;
 
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+
+  const { id } = await ctx.params;
+  const ownershipError = ensureOwnerOrAdmin(auth.user, id);
+  if (ownershipError) return ownershipError;
+
+  const csrfError = verifyCsrf(request);
+  if (csrfError) return csrfError;
+
+  try {
     const raw = await request.json();
     const data = userUpdateSchema.parse(raw);
 
@@ -151,9 +169,20 @@ export async function PUT(request: NextRequest, ctx: RouteCtx) {
 }
 
 export async function DELETE(_: NextRequest, ctx: RouteCtx) {
-  try {
-    const { id } = await ctx.params;
+  const rateLimited = await applyRateLimit(_, { key: "users-write" });
+  if (rateLimited) return rateLimited;
 
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+
+  const { id } = await ctx.params;
+  const ownershipError = ensureOwnerOrAdmin(auth.user, id);
+  if (ownershipError) return ownershipError;
+
+  const csrfError = verifyCsrf(_);
+  if (csrfError) return csrfError;
+
+  try {
     await prisma.user.delete({ where: { id } });
     return NextResponse.json({ success: true }, { status: 204 });
   } catch (error) {

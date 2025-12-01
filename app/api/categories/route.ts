@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import { categoryCreateSchema, categoryListQuerySchema } from '@/lib/validators/category'
 import { productWithRelations, serializeCategory } from '@/lib/serializers'
+import { requireSessionUser, requireAdminUser } from '@/lib/api-guards'
+import { applyRateLimit, verifyCsrf } from '@/lib/security'
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,6 +81,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimited = await applyRateLimit(request, { key: 'categories-write' })
+  if (rateLimited) return rateLimited
+
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+  const adminError = requireAdminUser(auth.user)
+  if (adminError) return adminError
+
+  const csrfError = verifyCsrf(request)
+  if (csrfError) return csrfError
+
   try {
     const raw = await request.json()
     const data = categoryCreateSchema.parse(raw)

@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/prisma/prisma-client'
+import { applyRateLimit, verifyCsrf } from './security'
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 export async function requireAdmin(request: NextRequest) {
+  if (!SAFE_METHODS.has(request.method.toUpperCase())) {
+    const rateLimited = await applyRateLimit(request, { key: 'admin-write' })
+    if (rateLimited) return rateLimited
+
+    const csrfError = verifyCsrf(request)
+    if (csrfError) return csrfError
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {

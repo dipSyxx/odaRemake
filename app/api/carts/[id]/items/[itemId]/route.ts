@@ -5,12 +5,23 @@ import { ZodError } from 'zod'
 import { cartItemUpdateSchema } from '@/lib/validators/cart'
 import { cartInclude } from '../../../helpers'
 import { serializeCart } from '@/lib/serializers'
+import { requireSessionUser, ensureOwnerOrAdmin } from '@/lib/api-guards'
+import { applyRateLimit, verifyCsrf } from '@/lib/security'
 
 type RouteCtx = {
   params: Promise<{ id: string; itemId: string }>
 }
 
 export async function PUT(request: NextRequest, ctx: RouteCtx) {
+  const rateLimited = await applyRateLimit(request, { key: 'cart-items' })
+  if (rateLimited) return rateLimited
+
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
+  const csrfError = verifyCsrf(request)
+  if (csrfError) return csrfError
+
   try {
     const { id: cartId, itemId } = await ctx.params
     const raw = await request.json()
@@ -23,11 +34,19 @@ export async function PUT(request: NextRequest, ctx: RouteCtx) {
     // Verify cart item exists and belongs to cart
     const existingItem = await prisma.cartItem.findUnique({
       where: { id: itemId },
+      include: {
+        cart: {
+          select: { userId: true, id: true },
+        },
+      },
     })
 
     if (!existingItem || existingItem.cartId !== cartId) {
       return NextResponse.json({ error: 'Fant ikke handlekurv element.' }, { status: 404 })
     }
+
+    const ownershipError = ensureOwnerOrAdmin(auth.user, existingItem.cart.userId)
+    if (ownershipError) return ownershipError
 
     const updateData: Prisma.CartItemUpdateInput = {}
     if (data.quantity !== undefined) updateData.quantity = data.quantity
@@ -76,17 +95,32 @@ export async function PUT(request: NextRequest, ctx: RouteCtx) {
 }
 
 export async function DELETE(_: NextRequest, ctx: RouteCtx) {
+  const rateLimited = await applyRateLimit(_, { key: 'cart-items' })
+  if (rateLimited) return rateLimited
+
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
+  const csrfError = verifyCsrf(_)
+  if (csrfError) return csrfError
+
   try {
     const { id: cartId, itemId } = await ctx.params
 
     // Verify cart item exists and belongs to cart
     const existingItem = await prisma.cartItem.findUnique({
       where: { id: itemId },
+      include: {
+        cart: { select: { userId: true, id: true } },
+      },
     })
 
     if (!existingItem || existingItem.cartId !== cartId) {
       return NextResponse.json({ error: 'Fant ikke handlekurv element.' }, { status: 404 })
     }
+
+    const ownershipError = ensureOwnerOrAdmin(auth.user, existingItem.cart.userId)
+    if (ownershipError) return ownershipError
 
     await prisma.cartItem.delete({ where: { id: itemId } })
 

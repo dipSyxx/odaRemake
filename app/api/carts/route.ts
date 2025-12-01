@@ -5,15 +5,24 @@ import { ZodError } from 'zod'
 import { cartListQuerySchema, cartCreateSchema } from '@/lib/validators/cart'
 import { cartInclude } from './helpers'
 import { serializeCart } from '@/lib/serializers'
+import { requireSessionUser } from '@/lib/api-guards'
+import { applyRateLimit, verifyCsrf } from '@/lib/security'
 
 export async function GET(request: NextRequest) {
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
   try {
     const query = cartListQuerySchema.parse(Object.fromEntries(request.nextUrl.searchParams.entries()))
 
     const { skip = 0, take = 50, userId, status } = query
 
     const where: Prisma.CartWhereInput = {
-      ...(userId ? { userId } : {}),
+      ...(auth.user.isAdmin
+        ? userId
+          ? { userId }
+          : {}
+        : { userId: auth.user.id }),
       ...(status ? { status } : {}),
     }
 
@@ -38,14 +47,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimited = await applyRateLimit(request, { key: 'carts-write' })
+  if (rateLimited) return rateLimited
+
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
+  const csrfError = verifyCsrf(request)
+  if (csrfError) return csrfError
+
   try {
     const raw = await request.json()
     const data = cartCreateSchema.parse(raw)
 
     const cart = await prisma.cart.create({
       data: {
-        userId: data.userId ?? null,
-        status: data.status ?? 'DRAFT',
+        userId: auth.user.isAdmin ? data.userId ?? null : auth.user.id,
+        status: auth.user.isAdmin ? data.status ?? 'DRAFT' : 'DRAFT',
         currency: data.currency ?? 'NOK',
       },
       include: cartInclude,

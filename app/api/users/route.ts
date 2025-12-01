@@ -3,6 +3,8 @@ import prisma from "@/prisma/prisma-client";
 import { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { serializeUser } from "@/lib/serializers";
+import { requireSessionUser, requireAdminUser } from "@/lib/api-guards";
+import { applyRateLimit, verifyCsrf } from "@/lib/security";
 
 const listQuerySchema = z.object({
   skip: z.coerce.number().int().min(0).optional(),
@@ -35,6 +37,11 @@ const userCreateSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+  const adminError = requireAdminUser(auth.user);
+  if (adminError) return adminError;
+
   try {
     const query = listQuerySchema.parse(
       Object.fromEntries(request.nextUrl.searchParams.entries()),
@@ -67,6 +74,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimited = await applyRateLimit(request, { key: "users-write" });
+  if (rateLimited) return rateLimited;
+
+  const auth = await requireSessionUser();
+  if (!auth.user) return auth.response;
+  const adminError = requireAdminUser(auth.user);
+  if (adminError) return adminError;
+
+  const csrfError = verifyCsrf(request);
+  if (csrfError) return csrfError;
+
   try {
     const raw = await request.json();
     const data = userCreateSchema.parse(raw);

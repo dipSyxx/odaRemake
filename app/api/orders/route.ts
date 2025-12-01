@@ -5,15 +5,24 @@ import { ZodError } from 'zod'
 import { orderListQuerySchema, orderCreateSchema } from '@/lib/validators/order'
 import { orderInclude } from './helpers'
 import { serializeOrder } from '@/lib/serializers'
+import { applyRateLimit, verifyCsrf } from '@/lib/security'
+import { requireSessionUser, ensureOwnerOrAdmin } from '@/lib/api-guards'
 
 export async function GET(request: NextRequest) {
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
   try {
     const query = orderListQuerySchema.parse(Object.fromEntries(request.nextUrl.searchParams.entries()))
 
     const { skip = 0, take = 50, userId, status, paymentStatus } = query
 
     const where: Prisma.OrderWhereInput = {
-      ...(userId ? { userId } : {}),
+      ...(auth.user.isAdmin
+        ? userId
+          ? { userId }
+          : {}
+        : { userId: auth.user.id }),
       ...(status ? { status } : {}),
       ...(paymentStatus ? { paymentStatus } : {}),
     }
@@ -39,9 +48,27 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimited = await applyRateLimit(request, { key: 'orders-write' })
+  if (rateLimited) return rateLimited
+
+  const auth = await requireSessionUser()
+  if (!auth.user) return auth.response
+
+  const csrfError = verifyCsrf(request)
+  if (csrfError) return csrfError
+
   try {
     const raw = await request.json()
     const data = orderCreateSchema.parse(raw)
+
+    const orderUserId = auth.user.isAdmin ? data.userId ?? null : auth.user.id
+
+    if (!auth.user.isAdmin && (data.status !== undefined || data.paymentStatus !== undefined)) {
+      return NextResponse.json(
+        { error: 'Du har ikke tilgang til Ǿ sette status pǾ ordren.' },
+        { status: 403 },
+      )
+    }
 
     // If cartId is provided, create order items from cart
     let orderItems: Prisma.OrderItemCreateWithoutOrderInput[] = []
@@ -54,12 +81,18 @@ export async function POST(request: NextRequest) {
               product: true,
             },
           },
+          user: {
+            select: { id: true },
+          },
         },
       })
 
       if (!cart) {
         return NextResponse.json({ error: 'Fant ikke handlekurv.' }, { status: 404 })
       }
+
+      const ownershipError = ensureOwnerOrAdmin(auth.user, cart.userId)
+      if (ownershipError) return ownershipError
 
       orderItems = cart.items.map((item) => ({
         productName: item.product?.name ?? `Produkt #${item.productId ?? 'ukjent'}`,
@@ -78,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     const order = await prisma.order.create({
       data: {
-        userId: data.userId ?? null,
+        userId: orderUserId,
         cartId: data.cartId ?? null,
         status: data.status ?? 'PENDING',
         paymentStatus: data.paymentStatus ?? 'PENDING',

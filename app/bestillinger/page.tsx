@@ -201,11 +201,11 @@ function OrderCard({ order }: { order: SerializedOrder }) {
                   <p className="font-medium">{item.productName}</p>
                   <p className="text-xs text-muted-foreground">
                     {item.quantity} stk ·{" "}
-                    {formatCurrency(item.unitPrice, item.currency)}
+                    {formatCurrency(item.unitPrice ?? 0, item.currency)}
                   </p>
                 </div>
                 <span className="font-semibold">
-                  {formatCurrency(item.unitPrice * item.quantity, item.currency)}
+                  {formatCurrency((item.unitPrice ?? 0) * item.quantity, item.currency)}
                 </span>
               </div>
             ))}
