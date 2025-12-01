@@ -3,7 +3,7 @@ import prisma from "@/prisma/prisma-client";
 import { Prisma } from "@prisma/client";
 import { ZodError, z } from "zod";
 import { serializeUser } from "@/lib/serializers";
-import { requireSessionUser, requireAdminUser } from "@/lib/api-guards";
+import { requireSessionUser, requireAdminUser, getSessionUser } from "@/lib/api-guards";
 import { applyRateLimit, verifyCsrf } from "@/lib/security";
 
 const listQuerySchema = z.object({
@@ -77,10 +77,12 @@ export async function POST(request: NextRequest) {
   const rateLimited = await applyRateLimit(request, { key: "users-write" });
   if (rateLimited) return rateLimited;
 
-  const auth = await requireSessionUser();
-  if (!auth.user) return auth.response;
-  const adminError = requireAdminUser(auth.user);
-  if (adminError) return adminError;
+  // Allow open signup; if a session exists, enforce admin role for creating additional users
+  const sessionUser = await getSessionUser();
+  if (sessionUser) {
+    const adminError = requireAdminUser(sessionUser);
+    if (adminError) return adminError;
+  }
 
   const csrfError = verifyCsrf(request);
   if (csrfError) return csrfError;
