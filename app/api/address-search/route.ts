@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ADDRESS_SEARCH_URL =
-  "https://oda.com/tienda-web-api/v1/geodata/address-search/";
+const ADDRESS_SEARCH_URL = "https://oda.com/api/v1/geodata/address-search/";
 
 type ExternalAddressResponse = {
   address_id: string;
